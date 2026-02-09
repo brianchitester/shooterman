@@ -17,6 +17,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   input: {
     keyboard: true,
     mouse: true,
+    gamepad: true,
   },
   scale: {
     mode: Phaser.Scale.FIT,
