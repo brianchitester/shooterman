@@ -5,7 +5,7 @@
 - One arena map
 - Destructible cover
 - Up to 7 local players
-- One enemy type
+- Two enemy types (chaser + shooter)
 - One weapon
 - Shared-lives co-op mode
 - Instant respawn PvP time mode (kill-count scoring)

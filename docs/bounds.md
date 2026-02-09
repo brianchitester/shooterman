@@ -55,20 +55,39 @@ All timers are in integer ticks (TICKS_PER_SECOND = 60). Convert to seconds for 
 | Parameter | Value | Ticks |
 |---|---|---|
 | Player HP | 3 | — |
+| Player move speed | 250 px/s | — |
+| Player knockback (bullet hit) | 12 px | — |
 | Bullet damage | 1 | — |
-| Enemy contact damage | 2 | — |
-| Breakable tile HP | 2 | — |
-| Chaser enemy HP | 2 | — |
 | Fire rate | 4/sec | 15 tick cooldown |
 | Bullet speed | 600 px/s | — |
 | Bullet TTL | 1.0s | 60 ticks |
-| Player move speed | 250 px/s | — |
+| Enemy contact damage | 2 | — |
+| Breakable tile HP | 2 | — |
+| **Chaser enemy** | | |
+| Chaser HP | 2 | — |
 | Chaser move speed | 120 px/s | — |
+| Chaser knockback | 24 px | — |
+| Chaser score | 100 | — |
+| **Shooter enemy** | | |
+| Shooter HP | 3 | — |
+| Shooter move speed | 80 px/s | — |
+| Shooter preferred range | 200 px | — |
+| Shooter fire cooldown | 1.5s | 90 ticks |
+| Shooter bullet speed | 350 px/s | — |
+| Shooter bullet damage | 1 | — |
+| Shooter bullet TTL | 1.5s | 90 ticks |
+| Shooter knockback | 12 px | — |
+| Shooter score | 200 | — |
+| Shooter spawn interval | Every 10th spawn | — |
+| **PvP mode** | | |
+| PvP match duration | 120s | 7200 ticks |
 | PvP respawn delay | 0.5s | 30 ticks |
+| **Respawn / invuln** | | |
 | Spawn invulnerability | 1.5s | 90 ticks |
 | Invuln rule | Cannot deal damage while invuln | — |
 | Hit i-frames | 0.1s | 6 ticks |
-| Downed bleed-out (co-op) | 8.0s | 480 ticks |
+| **Co-op downed / revive** | | |
+| Downed bleed-out | 8.0s | 480 ticks |
 | Revive radius | 56px (~1.2 tiles) | — |
 | Revive hold time | 1.5s | 90 ticks |
 | Downed crawl speed | 75 px/s (30% of normal) | — |
@@ -87,15 +106,15 @@ All timers are in integer ticks (TICKS_PER_SECOND = 60). Convert to seconds for 
 
 ---
 
-## Enemy Spawn Scaling
+## Enemy Spawn Scaling (co-op only, no enemies in PvP)
 
 - Base spawn rate: 1 enemy per 3s at t=0, ramping to 1 per 1s by t=60s
 - Player count multiplier: `spawnRate *= (0.5 + 0.5 * playerCount)`
-- Max concurrent enemies: `min(5 + 3 * playerCount, 20)`
+- Enemy pool size: 100 (pre-allocated). Spawn skipped if pool is full.
 - Minimum spawn distance from any alive player: 150px (~3.1 tiles)
 - Spawn telegraph: 0.5s pulsing indicator at spawn point before enemy materializes
 - Spawn zones: 4 cardinal edge zones; pick zone farthest from nearest player
-- Fallback: if no valid zone exists (all edges occupied), spawn at center of the largest empty region
+- Enemy type selection: every 10th spawn is a shooter, rest are chasers
 
 ---
 

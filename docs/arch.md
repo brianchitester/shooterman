@@ -8,7 +8,7 @@
 
 ## Goals
 
-- **Fast prototype iteration** (one arena, destructible cover, co-op endless, PvP later)
+- **Fast prototype iteration** (one arena, destructible cover, co-op endless + PvP time mode)
 - **7-player local** (gamepads + optional KB/M)
 - **No spectator downtime** (respawn/downs design)
 - **Online-ready later** without rewriting core logic (simulation stays engine-agnostic)
@@ -44,12 +44,20 @@ src/
     config.ts
     scenes/
       BootScene.ts
+      StartScene.ts
       LobbyScene.ts
       MatchScene.ts
+      PauseScene.ts
+      GameOverScene.ts
     render/
       RenderWorld.ts
       RenderFactories.ts
-      Vfx.ts
+      HUD.ts
+      PrevPositions.ts
+    input/
+      InputManager.ts
+      KeyboardMouseDevice.ts
+      GamepadDevice.ts
   core/
     state/
       GameState.ts
@@ -57,6 +65,7 @@ src/
       Defaults.ts
     sim/
       tick.ts
+      tileCollision.ts
       systems/
         applyIntents.ts
         movement.ts
@@ -69,19 +78,9 @@ src/
         modeRules.ts
       rng/
         seedRng.ts
-    input/
-      InputManager.ts
-      devices/
-        KeyboardMouseDevice.ts
-        GamepadDevice.ts
-      mapping/
-        defaultMappings.ts
-      lobby/
-        JoinManager.ts
     events/
       EventBus.ts
       Events.ts
-  assets/   (optional; for audio/images later)
   tests/    (Vitest)
 ```
 
@@ -97,12 +96,21 @@ Keep these as plain data. No Phaser types in `core/`.
 // core/state/Types.ts
 export type EntityId = number; // monotonic counter, not string
 
+export type DeviceType = "kbm" | "gamepad";
+
+export interface DeviceAssignment {
+  type: DeviceType;
+  gamepadIndex: number; // -1 for kbm
+}
+
 export interface Vec2 {
   x: number;
   y: number;
 }
 
 export type Mode = "coop" | "pvp_time";
+
+export type EnemyType = "chaser" | "shooter";
 
 export interface PlayerState {
   id: EntityId;
@@ -132,15 +140,20 @@ export interface BulletState {
   ttl: number; // ticks
   damage: number;
   active: boolean; // pooling flag
+  fromEnemy: boolean; // true for enemy-fired bullets
 }
 
 export interface EnemyState {
   id: EntityId;
-  type: "chaser"; // prototype
+  type: EnemyType;
   pos: Vec2;
   vel: Vec2;
   hp: number;
   active: boolean; // pooling flag
+  spawnTimer: number; // ticks remaining in telegraph (0 = fully spawned)
+  fireCooldown: number; // ticks (0 for chasers, active for shooters)
+  knockback: number; // px, instant push on bullet hit (per-type)
+  score: number; // points awarded on kill (per-type)
 }
 
 export type TileType = "empty" | "solid" | "breakable";
@@ -165,6 +178,8 @@ export interface MatchState {
   rngSeed: number;
   rngState: number; // current RNG internal state for determinism
   nextEntityId: number; // monotonic counter for EntityId generation
+  gameOver: boolean;
+  spawnCount: number; // total enemies spawned (used for type selection)
 }
 
 export interface GameState {
@@ -216,22 +231,28 @@ export interface PlayerIntent {
 
 ```ts
 // core/sim/tick.ts
+const DT = 1 / TICKS_PER_SECOND;
+
 export function step(
   state: GameState,
   intents: PlayerIntent[],
-  dt: number,
   rng: SeededRng,
   events: EventBus,
 ) {
-  applyIntents(state, intents, dt);
-  movementSystem(state, dt);
-  shootingSystem(state, dt, rng, events);
-  bulletSystem(state, dt);
+  if (state.match.gameOver) return;
+
+  applyIntents(state, intents, DT);
+  movementSystem(state, DT);
+  shootingSystem(state, intents, DT, rng, events);
+  bulletSystem(state, DT);
   collisionSystem(state, events); // order: enemies → players → tiles → contact
-  enemyAISystem(state, dt, rng);
-  spawnSystem(state, dt, rng, events);
-  livesRespawnSystem(state, dt, events);
-  modeRulesSystem(state, dt);
+  enemyAISystem(state, DT);
+  spawnSystem(state, DT, rng, events);
+  livesRespawnSystem(state, intents, DT, events);
+  modeRulesSystem(state, DT);
+
+  state.match.rngState = rng.state();
+  state.match.tick++;
 }
 ```
 
@@ -268,23 +289,25 @@ No system may hold references to state sub-objects across tick boundaries.
 ## Systems Responsibilities (Prototype)
 
 - `applyIntents`: copy/transform intents into player movement/aim desires
-- `movement`: acceleration + damping + arena bounds (250 px/s move speed)
-- `shooting`: rate-limited bullet spawn from pre-allocated pool (15-tick cooldown)
+- `movement`: acceleration + damping + arena bounds + tile collision (250 px/s move speed). Downed players crawl at 75 px/s.
+- `shooting`: rate-limited bullet spawn from pre-allocated pool (15-tick cooldown). Invuln players cannot fire.
 - `bullets`: integrate position, decrement TTL, deactivate expired bullets
 - `collisions` (resolution order: enemies → players → tiles → contact):
-  - bullets vs enemies (first hit deactivates bullet)
-  - bullets vs players (friendly fire OFF in co-op, ON in PvP; invuln players immune)
+  - bullets vs enemies (first hit deactivates bullet; knockback push along bullet dir; score/kills awarded)
+  - bullets vs players (friendly fire OFF in co-op, ON in PvP; invuln players immune; 12px knockback on all hits)
   - bullets vs tiles (reduce HP; set to empty + emit `tile_destroyed` when HP reaches 0)
   - enemies vs players (contact damage = 2 HP, last)
   - Bullet-tile lookup via grid indexing: `cellX = floor(pos.x / cellSize)`, O(1) per bullet
 
-- `enemies`: choose target (nearest alive player), steer (120 px/s)
-- `spawns`: spawn enemies at edges; 150px min distance from players; 30-tick telegraph; scale with player count (see bounds.md)
+- `enemies`: two types — chasers (120 px/s, seek nearest player) and shooters (80 px/s, maintain 200px range, fire bullets at 1.5s intervals)
+- `spawns`: co-op only (PvP has no enemies). Spawn at edges; 150px min distance from players; 30-tick telegraph; every 10th spawn is a shooter. Scale rate with player count (see bounds.md).
 - `livesRespawn`:
   - co-op: downed state + revive (90-tick hold) + bleed-out (480 ticks) + shared lives
   - PvP: 30-tick respawn + 90-tick invuln (cannot deal damage while invuln)
 
-- `modeRules`: scoring (kills/deaths for PvP, shared score for co-op), friendly fire rules, match timer, end conditions
+- `modeRules`:
+  - co-op: game over when 0 shared lives and no players alive or downed
+  - PvP: game over when tick >= 7200 (2 minutes). Kills/deaths tracked per player.
 
 ---
 
@@ -314,6 +337,7 @@ Simulation emits events; renderer consumes them. Events never feed back into the
 - `player_respawned { playerId, pos }`
 - `enemy_spawned { enemyId, pos }` — preceded by 30-tick telegraph
 - `enemy_killed { enemyId, killerBulletOwnerId }`
+- `player_joined { playerId, slot, pos }` — mid-match drop-in
 
 ---
 
@@ -322,11 +346,15 @@ Simulation emits events; renderer consumes them. Events never feed back into the
 ### Scene responsibilities
 
 - **BootScene**: load minimal assets (or none early), init plugins
-- **LobbyScene**: join flow, device assignment, start match
+- **StartScene**: title screen with Start button
+- **LobbyScene**: join flow (up to 7 controllers), device assignment, mode select, start match
 - **MatchScene**:
   - owns `GameState`, `InputManager`, `EventBus`
   - runs fixed-timestep simulation
-  - updates `RenderWorld` each frame
+  - updates `RenderWorld` + `HUD` each frame
+  - supports mid-match drop-in for new players
+- **PauseScene**: overlay on Escape, resume/quit
+- **GameOverScene**: co-op (final score) or PvP (ranked leaderboard with kills/deaths)
 
 ### RenderWorld
 
@@ -368,16 +396,16 @@ No Phaser required in unit tests.
 
 ---
 
-## Milestone Build Order
+## Milestone Build Order (all complete)
 
-1. `GameState` + fixed tick loop + seeded RNG (no rendering, console logs ok)
-2. Render players + movement + render interpolation (KB/M first)
-3. Shooting + bullets (pooled from day one)
-4. Tile grid + breakable tiles (core "Bomberman" influence)
-5. Enemies + spawns (pooled, with telegraph + safety distance)
-6. Co-op shared lives + downed/revive (no spectators)
-7. Lobby join flow (7 controllers) + mid-match drop-in
-8. PvP time mode (kills/deaths scoring, instant respawn)
+1. ~~`GameState` + fixed tick loop + seeded RNG~~
+2. ~~Render players + movement + render interpolation~~
+3. ~~Shooting + bullets (pooled from day one)~~
+4. ~~Tile grid + breakable tiles~~
+5. ~~Enemies + spawns (chaser + shooter, pooled, telegraph + safety distance)~~
+6. ~~Co-op shared lives + downed/revive~~
+7. ~~Lobby join flow (7 controllers) + mid-match drop-in~~
+8. ~~PvP time mode (2-min timer, kills/deaths scoring, instant respawn, knockback, HUD, game over)~~
 
 ---
 
@@ -403,10 +431,10 @@ This is the one constraint that keeps networking possible later.
 Plain data, no Phaser objects.
 
 - `players[]`: id, slot, pos, vel, aim, hp, alive, downed, downedTimer, reviveProgress, reviverId, respawnTimer, invulnTimer, fireCooldown, kills, deaths, team
-- `bullets[]`: id, ownerId, pos, vel, ttl, damage, active (pre-allocated pool)
-- `enemies[]`: id, type, pos, vel, hp, active (pre-allocated pool)
+- `bullets[]`: id, ownerId, pos, vel, ttl, damage, active, fromEnemy (pre-allocated pool)
+- `enemies[]`: id, type, pos, vel, hp, active, spawnTimer, fireCooldown, knockback, score (pre-allocated pool)
 - `tiles`: destructible grid (hp per cell, type: empty/solid/breakable)
-- `match`: mode, tick, sharedLives, score, rngSeed, rngState, nextEntityId
+- `match`: mode, tick, sharedLives, score, rngSeed, rngState, nextEntityId, gameOver, spawnCount
 
 ### B) `InputManager` (device → intent)
 
@@ -423,17 +451,19 @@ This layer is where controller mapping lives.
 
 ### C) `Systems` (simulation steps)
 
-Each tick (all receive seeded RNG where needed):
+Each tick (DT = 1/60, computed once):
 
-1. `applyIntents(state, intents, dt)`
-2. `movementSystem(state, dt)`
-3. `shootSystem(state, dt, rng)` (spawns bullets from pool)
-4. `bulletSystem(state, dt)` (moves bullets, decrements TTL ticks)
+1. `applyIntents(state, intents, DT)`
+2. `movementSystem(state, DT)`
+3. `shootingSystem(state, intents, DT, rng, events)` (spawns bullets from pool)
+4. `bulletSystem(state, DT)` (moves bullets, decrements TTL ticks)
 5. `collisionSystem(state, events)` (enemies → players → tiles → contact)
-6. `enemyAISystem(state, dt, rng)`
-7. `spawnSystem(state, dt, rng, events)` (edges, telegraph, safety distance)
-8. `livesRespawnSystem(state, dt, events)` (no spectator rule)
-9. `modeRulesSystem(state, dt)` (scoring, match timer, end conditions)
+6. `enemyAISystem(state, DT)` (chaser seek + shooter range/fire)
+7. `spawnSystem(state, DT, rng, events)` (co-op only; edges, telegraph, safety distance)
+8. `livesRespawnSystem(state, intents, DT, events)` (no spectator rule)
+9. `modeRulesSystem(state, DT)` (end conditions: co-op lives / PvP timer)
+
+Then: `state.match.rngState = rng.state(); state.match.tick++;`
 
 Keep systems pure (state in → state out). All timers in tick counts.
 
@@ -452,6 +482,7 @@ Simulation emits events the renderer consumes. Events never feed back into simul
 - `bullet_fired`, `hit_player`, `hit_enemy`, `tile_damaged`, `tile_destroyed`
 - `player_downed`, `revive_start`, `revive_complete`, `revive_cancelled`
 - `player_bled_out`, `player_respawned`, `enemy_spawned`, `enemy_killed`
+- `player_joined`
 
 EventBus is drained by the renderer after all sim ticks per frame. See "EventBus Contract" section above for full lifecycle spec.
 
@@ -459,13 +490,12 @@ EventBus is drained by the renderer after all sim ticks per frame. See "EventBus
 
 ## 3) Scenes (Phaser)
 
-Keep it super simple:
-
 - `BootScene` (load assets)
-- `LobbyScene` (“Press A to join” + pick mode)
-- `MatchScene` (runs game loop)
-
-Lobby exists mainly to solve controller assignment cleanly.
+- `StartScene` (title screen)
+- `LobbyScene` ("Press A to join" + pick mode)
+- `MatchScene` (runs game loop + mid-match join)
+- `PauseScene` (overlay, resume/quit)
+- `GameOverScene` (co-op score / PvP leaderboard)
 
 ---
 
@@ -497,7 +527,7 @@ Collision system checks bullet position → grid cell → apply damage/remove.
 ## 6) Key Constants (Defaults.ts)
 
 ```ts
-// core/state/Defaults.ts
+// core/state/Defaults.ts (key layout constants — see file for full balance table)
 export const TICKS_PER_SECOND = 60;
 export const ARENA_WIDTH = 960;
 export const ARENA_HEIGHT = 720;
@@ -506,7 +536,8 @@ export const TILE_ROWS = 15;
 export const CELL_SIZE = 48;
 export const MAX_PLAYERS = 7;
 export const MAX_BULLETS = 256;  // pre-allocated pool
-export const MAX_ENEMIES = 20;   // hard cap regardless of player count
+export const MAX_ENEMIES = 100;  // pre-allocated pool
+export const PVP_MATCH_DURATION = 7200; // ticks (120s)
 ```
 
 ---
