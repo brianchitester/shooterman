@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import type { GameState } from "../../core/state/Types";
-import { ARENA_WIDTH, ARENA_HEIGHT, REVIVE_RADIUS } from "../../core/state/Defaults";
+import { ARENA_WIDTH, REVIVE_RADIUS } from "../../core/state/Defaults";
 
 const HUD_DEPTH = 10;
 const TEXT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
@@ -13,8 +13,6 @@ export class HUD {
   private livesText!: Phaser.GameObjects.Text;
   private scoreText!: Phaser.GameObjects.Text;
   private revivePrompt!: Phaser.GameObjects.Text;
-  private gameOverText!: Phaser.GameObjects.Text;
-  private gameOverScore!: Phaser.GameObjects.Text;
 
   create(scene: Phaser.Scene): void {
     this.livesText = scene.add.text(8, 4, "", TEXT_STYLE).setDepth(HUD_DEPTH);
@@ -25,27 +23,6 @@ export class HUD {
     this.revivePrompt = scene.add.text(0, 0, "[E] Revive", {
       fontSize: "12px",
       color: "#2ecc71",
-      fontFamily: "monospace",
-    })
-      .setOrigin(0.5)
-      .setDepth(HUD_DEPTH)
-      .setVisible(false);
-
-    const cx = ARENA_WIDTH / 2;
-    const cy = ARENA_HEIGHT / 2;
-
-    this.gameOverText = scene.add.text(cx, cy - 20, "GAME OVER", {
-      fontSize: "48px",
-      color: "#e74c3c",
-      fontFamily: "monospace",
-    })
-      .setOrigin(0.5)
-      .setDepth(HUD_DEPTH)
-      .setVisible(false);
-
-    this.gameOverScore = scene.add.text(cx, cy + 30, "", {
-      fontSize: "20px",
-      color: "#ffffff",
       fontFamily: "monospace",
     })
       .setOrigin(0.5)
@@ -81,12 +58,5 @@ export class HUD {
       }
     }
     this.revivePrompt.setVisible(showPrompt);
-
-    // Game over
-    if (state.match.gameOver) {
-      this.gameOverText.setVisible(true);
-      this.gameOverScore.setText(`FINAL SCORE: ${state.match.score}`);
-      this.gameOverScore.setVisible(true);
-    }
   }
 }

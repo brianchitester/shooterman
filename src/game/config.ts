@@ -3,6 +3,7 @@ import { BootScene } from "./scenes/BootScene";
 import { StartScene } from "./scenes/StartScene";
 import { MatchScene } from "./scenes/MatchScene";
 import { PauseScene } from "./scenes/PauseScene";
+import { GameOverScene } from "./scenes/GameOverScene";
 import { ARENA_WIDTH, ARENA_HEIGHT } from "../core/state/Defaults";
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
@@ -12,7 +13,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   backgroundColor: "#1a1a2e",
   pixelArt: true,
   antialias: false,
-  scene: [BootScene, StartScene, MatchScene, PauseScene],
+  scene: [BootScene, StartScene, MatchScene, PauseScene, GameOverScene],
   input: {
     keyboard: true,
     mouse: true,

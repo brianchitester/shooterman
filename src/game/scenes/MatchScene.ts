@@ -25,6 +25,7 @@ export class MatchScene extends Phaser.Scene {
   private hud!: HUD;
   private prev!: PrevPositions;
   private accumulator = 0;
+  private gameOverLaunched = false;
 
   constructor() {
     super({ key: "MatchScene" });
@@ -42,6 +43,7 @@ export class MatchScene extends Phaser.Scene {
     // Initialize prev positions to current so first frame doesn't lerp from 0,0
     snapshotPositions(this.state, this.prev);
 
+    this.gameOverLaunched = false;
     this.renderWorld.create(this, this.state);
     this.hud.create(this);
 
@@ -87,6 +89,13 @@ export class MatchScene extends Phaser.Scene {
     const evts = this.eventBus.drain();
     if (evts.length > 0) {
       console.log(`[MatchScene] ${evts.length} events this frame`);
+    }
+
+    // Launch game over overlay once
+    if (this.state.match.gameOver && !this.gameOverLaunched) {
+      this.gameOverLaunched = true;
+      this.scene.pause();
+      this.scene.launch("GameOverScene", { score: this.state.match.score });
     }
   }
 }
