@@ -21,6 +21,7 @@ const ENEMY_COLOR = 0x8b0000;
 
 const TILE_SOLID_COLOR = 0x444444;
 const TILE_BREAKABLE_COLOR = 0x8b6914;
+const TILE_BREAKABLE_DAMAGED_COLOR = 0x5c470e;
 
 export function createPlayerGraphic(scene: Phaser.Scene, slot: number): Phaser.GameObjects.Graphics {
   const g = scene.add.graphics();
@@ -73,8 +74,17 @@ export function drawTiles(g: Phaser.GameObjects.Graphics, tiles: TileGrid): void
         g.fillStyle(TILE_SOLID_COLOR, 1);
         g.fillRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
       } else if (cell.type === "breakable") {
-        g.fillStyle(TILE_BREAKABLE_COLOR, 1);
+        const color = cell.hp < 2 ? TILE_BREAKABLE_DAMAGED_COLOR : TILE_BREAKABLE_COLOR;
+        g.fillStyle(color, 1);
         g.fillRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        // Crack lines on damaged tiles
+        if (cell.hp < 2) {
+          g.lineStyle(1, 0x3a2f0a, 0.6);
+          const x = col * CELL_SIZE;
+          const y = row * CELL_SIZE;
+          g.lineBetween(x + 8, y + 4, x + CELL_SIZE - 12, y + CELL_SIZE - 8);
+          g.lineBetween(x + CELL_SIZE - 10, y + 10, x + 6, y + CELL_SIZE - 6);
+        }
       }
     }
   }
