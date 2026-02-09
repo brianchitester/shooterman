@@ -8,6 +8,7 @@ import {
   createBulletGraphic,
   createEnemyGraphic,
   createTileGraphics,
+  drawTiles,
 } from "./RenderFactories";
 
 export class RenderWorld {
@@ -15,6 +16,7 @@ export class RenderWorld {
   private aimGfx: Phaser.GameObjects.Graphics[] = [];
   private bulletGfx: Phaser.GameObjects.Graphics[] = [];
   private enemyGfx: Phaser.GameObjects.Graphics[] = [];
+  private tileGfx!: Phaser.GameObjects.Graphics;
 
   create(scene: Phaser.Scene, state: GameState): void {
     // Background
@@ -24,7 +26,8 @@ export class RenderWorld {
     bg.setDepth(0);
 
     // Tile grid
-    createTileGraphics(scene, state.tiles);
+    this.tileGfx = createTileGraphics(scene);
+    drawTiles(this.tileGfx, state.tiles);
 
     // Player pool
     for (let i = 0; i < MAX_PLAYERS; i++) {
@@ -44,6 +47,9 @@ export class RenderWorld {
   }
 
   update(state: GameState, prev: PrevPositions, alpha: number): void {
+    // Redraw tile grid (destroyed tiles disappear)
+    drawTiles(this.tileGfx, state.tiles);
+
     // Players
     for (let i = 0; i < state.players.length; i++) {
       const p = state.players[i];

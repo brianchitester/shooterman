@@ -1,5 +1,8 @@
 import type { GameState } from "../../state/Types";
 import { CHASER_MOVE_SPEED } from "../../state/Defaults";
+import { resolveCircleTile } from "../tileCollision";
+
+const ENEMY_COLLIDER_RADIUS = 12;
 
 export function enemyAISystem(state: GameState, dt: number): void {
   for (let e = 0; e < state.enemies.length; e++) {
@@ -48,5 +51,12 @@ export function enemyAISystem(state: GameState, dt: number): void {
     // Integrate position
     enemy.pos.x += enemy.vel.x * dt;
     enemy.pos.y += enemy.vel.y * dt;
+
+    // Resolve tile collisions
+    const resolved = resolveCircleTile(
+      enemy.pos.x, enemy.pos.y, ENEMY_COLLIDER_RADIUS, state.tiles,
+    );
+    enemy.pos.x = resolved.x;
+    enemy.pos.y = resolved.y;
   }
 }

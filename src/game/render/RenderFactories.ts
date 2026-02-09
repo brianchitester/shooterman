@@ -58,10 +58,14 @@ export function createEnemyGraphic(scene: Phaser.Scene): Phaser.GameObjects.Grap
   return g;
 }
 
-export function createTileGraphics(scene: Phaser.Scene, tiles: TileGrid): Phaser.GameObjects.Graphics {
+export function createTileGraphics(scene: Phaser.Scene): Phaser.GameObjects.Graphics {
   const g = scene.add.graphics();
   g.setDepth(1);
+  return g;
+}
 
+export function drawTiles(g: Phaser.GameObjects.Graphics, tiles: TileGrid): void {
+  g.clear();
   for (let row = 0; row < tiles.height; row++) {
     for (let col = 0; col < tiles.width; col++) {
       const cell = tiles.cells[row * tiles.width + col];
@@ -74,6 +78,4 @@ export function createTileGraphics(scene: Phaser.Scene, tiles: TileGrid): Phaser
       }
     }
   }
-
-  return g;
 }
