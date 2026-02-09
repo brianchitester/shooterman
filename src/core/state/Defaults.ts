@@ -9,7 +9,7 @@ export const CELL_SIZE = 48;
 // Pool sizes
 export const MAX_PLAYERS = 7;
 export const MAX_BULLETS = 256;
-export const MAX_ENEMIES = 20;
+export const MAX_ENEMIES = 100;
 
 // Player balance
 export const PLAYER_HP = 3;

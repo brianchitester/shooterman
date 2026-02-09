@@ -5,8 +5,6 @@ import {
   ARENA_WIDTH, ARENA_HEIGHT, CELL_SIZE,
   SPAWN_SAFETY_DISTANCE, ENEMY_HP, SPAWN_TELEGRAPH_TICKS,
   SPAWN_RATE_BASE_INTERVAL, SPAWN_RATE_MIN_INTERVAL, SPAWN_RAMP_DURATION,
-  ENEMY_CAP_BASE, ENEMY_CAP_PER_PLAYER,
-  MAX_ENEMIES,
 } from "../../state/Defaults";
 
 // Only spawn enemies in co-op (PvP has no enemies)
@@ -14,16 +12,6 @@ export function spawnSystem(state: GameState, dt: number, rng: SeededRng, events
   if (state.match.mode !== "coop") return;
 
   const playerCount = state.players.length;
-
-  // Calculate current enemy cap
-  const cap = Math.min(ENEMY_CAP_BASE + ENEMY_CAP_PER_PLAYER * playerCount, MAX_ENEMIES);
-
-  // Count active enemies
-  let activeCount = 0;
-  for (let i = 0; i < state.enemies.length; i++) {
-    if (state.enemies[i].active) activeCount++;
-  }
-  if (activeCount >= cap) return;
 
   // Calculate spawn interval (ramps from 3s to 1s over 60s)
   const t = Math.min(state.match.tick / SPAWN_RAMP_DURATION, 1);
