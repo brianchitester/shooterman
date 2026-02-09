@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { BootScene } from "./scenes/BootScene";
 import { StartScene } from "./scenes/StartScene";
+import { LobbyScene } from "./scenes/LobbyScene";
 import { MatchScene } from "./scenes/MatchScene";
 import { PauseScene } from "./scenes/PauseScene";
 import { GameOverScene } from "./scenes/GameOverScene";
@@ -13,7 +14,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   backgroundColor: "#1a1a2e",
   pixelArt: true,
   antialias: false,
-  scene: [BootScene, StartScene, MatchScene, PauseScene, GameOverScene],
+  scene: [BootScene, StartScene, LobbyScene, MatchScene, PauseScene, GameOverScene],
   input: {
     keyboard: true,
     mouse: true,

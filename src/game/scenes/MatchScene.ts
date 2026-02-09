@@ -1,10 +1,10 @@
 import Phaser from "phaser";
-import { createGameState } from "../../core/state/GameState";
+import { createGameState, addPlayerToState } from "../../core/state/GameState";
 import { createRng } from "../../core/sim/rng/seedRng";
 import { createEventBus } from "../../core/events/EventBus";
 import { step } from "../../core/sim/tick";
-import { TICKS_PER_SECOND } from "../../core/state/Defaults";
-import type { GameState } from "../../core/state/Types";
+import { TICKS_PER_SECOND, MAX_PLAYERS } from "../../core/state/Defaults";
+import type { GameState, Mode, DeviceAssignment } from "../../core/state/Types";
 import type { SeededRng } from "../../core/sim/rng/seedRng";
 import type { EventBus } from "../../core/events/EventBus";
 import { RenderWorld } from "../render/RenderWorld";
@@ -16,6 +16,11 @@ import type { PrevPositions } from "../render/PrevPositions";
 const DT = 1 / TICKS_PER_SECOND;
 const MAX_STEPS_PER_FRAME = 5;
 
+interface LobbyData {
+  mode: Mode;
+  assignments: DeviceAssignment[];
+}
+
 export class MatchScene extends Phaser.Scene {
   private state!: GameState;
   private rng!: SeededRng;
@@ -24,6 +29,7 @@ export class MatchScene extends Phaser.Scene {
   private renderWorld!: RenderWorld;
   private hud!: HUD;
   private prev!: PrevPositions;
+  private assignments: DeviceAssignment[] = [];
   private accumulator = 0;
   private gameOverLaunched = false;
 
@@ -31,11 +37,18 @@ export class MatchScene extends Phaser.Scene {
     super({ key: "MatchScene" });
   }
 
-  create(): void {
-    this.state = createGameState("coop", 1, 42);
-    this.rng = createRng(42);
+  create(data?: LobbyData): void {
+    const mode: Mode = data?.mode ?? "coop";
+    const assignments: DeviceAssignment[] = data?.assignments ?? [{ type: "kbm", gamepadIndex: -1 }];
+    const playerCount = assignments.length;
+    const seed = Date.now();
+
+    this.state = createGameState(mode, playerCount, seed);
+    this.rng = createRng(seed);
     this.eventBus = createEventBus();
     this.inputMgr = new InputManager(this);
+    this.inputMgr.setAssignments(assignments);
+    this.assignments = [...assignments];
     this.renderWorld = new RenderWorld();
     this.hud = new HUD();
     this.prev = createPrevPositions();
@@ -60,6 +73,9 @@ export class MatchScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
+    // Mid-match join
+    this.checkMidMatchJoin();
+
     // Poll input
     const intents = this.inputMgr.poll(this.state.players);
 
@@ -97,5 +113,27 @@ export class MatchScene extends Phaser.Scene {
       this.scene.pause();
       this.scene.launch("GameOverScene", { score: this.state.match.score });
     }
+  }
+
+  private checkMidMatchJoin(): void {
+    if (this.state.players.length >= MAX_PLAYERS || this.state.match.gameOver) return;
+
+    const newAssignment = this.inputMgr.detectUnassignedPress();
+    if (!newAssignment) return;
+
+    const player = addPlayerToState(this.state);
+    this.assignments.push(newAssignment);
+    this.inputMgr.setAssignments(this.assignments);
+
+    // Set prev position to current so first frame doesn't lerp from 0,0
+    this.prev.players[player.slot].x = player.pos.x;
+    this.prev.players[player.slot].y = player.pos.y;
+
+    this.eventBus.emit({
+      type: "player_joined",
+      playerId: player.id,
+      slot: player.slot,
+      pos: { x: player.pos.x, y: player.pos.y },
+    });
   }
 }

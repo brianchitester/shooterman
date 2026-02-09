@@ -2,10 +2,10 @@ import type { GameState, PlayerState, BulletState, EnemyState, TileGrid, TileCel
 import {
   ARENA_WIDTH, ARENA_HEIGHT, TILE_COLS, TILE_ROWS, CELL_SIZE,
   MAX_BULLETS, MAX_ENEMIES, PLAYER_HP, SHARED_LIVES_BASE, SPAWN_POINTS,
-  BREAKABLE_TILE_HP,
+  BREAKABLE_TILE_HP, SPAWN_INVULN_DURATION,
 } from "./Defaults";
 
-function createPlayer(slot: number, nextEntityId: number): PlayerState {
+export function createPlayer(slot: number, nextEntityId: number): PlayerState {
   const spawn = SPAWN_POINTS[slot % SPAWN_POINTS.length];
   return {
     id: nextEntityId,
@@ -126,6 +126,18 @@ export function createGameState(mode: Mode, playerCount: number, rngSeed: number
     tiles: createTileGrid(),
     match,
   };
+}
+
+export function addPlayerToState(state: GameState): PlayerState {
+  const slot = state.players.length;
+  const id = state.match.nextEntityId++;
+  const player = createPlayer(slot, id);
+  player.invulnTimer = SPAWN_INVULN_DURATION;
+  state.players.push(player);
+  if (state.match.mode === "coop") {
+    state.match.sharedLives += 1;
+  }
+  return player;
 }
 
 function cloneVec2(v: { x: number; y: number }): { x: number; y: number } {

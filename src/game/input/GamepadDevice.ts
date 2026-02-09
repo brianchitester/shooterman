@@ -19,10 +19,33 @@ export class GamepadDevice {
     return null;
   }
 
+  /** Returns the gamepad at the given index, or null if not connected. */
+  getPadByIndex(index: number): Phaser.Input.Gamepad.Gamepad | null {
+    if (!this.scene.input.gamepad) return null;
+    const pad = this.scene.input.gamepad.gamepads[index];
+    return pad && pad.connected ? pad : null;
+  }
+
   poll(): PlayerIntent | null {
     const pad = this.getPad();
     if (!pad) return null;
+    return this.readPad(pad);
+  }
 
+  pollByIndex(index: number): PlayerIntent | null {
+    const pad = this.getPadByIndex(index);
+    if (!pad) return null;
+    return this.readPad(pad);
+  }
+
+  /** Returns true if any face button is pressed on the gamepad at the given index. */
+  isAnyButtonPressed(index: number): boolean {
+    const pad = this.getPadByIndex(index);
+    if (!pad) return false;
+    return pad.A || pad.B || pad.X || pad.Y;
+  }
+
+  private readPad(pad: Phaser.Input.Gamepad.Gamepad): PlayerIntent {
     // Left stick — movement
     let mx = pad.leftStick.x;
     let my = pad.leftStick.y;

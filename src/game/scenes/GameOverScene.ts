@@ -45,7 +45,7 @@ export class GameOverScene extends Phaser.Scene {
     const startNewGame = () => {
       this.scene.stop("MatchScene");
       this.scene.stop();
-      this.scene.start("MatchScene");
+      this.scene.start("LobbyScene");
     };
 
     newGameText.on("pointerdown", startNewGame);

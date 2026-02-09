@@ -41,19 +41,23 @@ export class HUD {
       this.scoreText.setVisible(false);
     }
 
-    // Revive prompt: show near downed teammates when player 0 is alive and in range
+    // Revive prompt: show near first downed teammate in range of any alive player
     let showPrompt = false;
-    const p0 = state.players[0];
-    if (p0 && p0.alive && !p0.downed && state.match.mode === "coop") {
-      for (let i = 1; i < state.players.length; i++) {
-        const other = state.players[i];
-        if (!other.downed) continue;
-        const dx = p0.pos.x - other.pos.x;
-        const dy = p0.pos.y - other.pos.y;
-        if (dx * dx + dy * dy <= REVIVE_RADIUS * REVIVE_RADIUS) {
-          this.revivePrompt.setPosition(other.pos.x, other.pos.y - 28);
-          showPrompt = true;
-          break;
+    if (state.match.mode === "coop") {
+      for (let d = 0; d < state.players.length && !showPrompt; d++) {
+        const downed = state.players[d];
+        if (!downed.downed) continue;
+        for (let r = 0; r < state.players.length; r++) {
+          if (r === d) continue;
+          const rescuer = state.players[r];
+          if (!rescuer.alive || rescuer.downed) continue;
+          const dx = rescuer.pos.x - downed.pos.x;
+          const dy = rescuer.pos.y - downed.pos.y;
+          if (dx * dx + dy * dy <= REVIVE_RADIUS * REVIVE_RADIUS) {
+            this.revivePrompt.setPosition(downed.pos.x, downed.pos.y - 28);
+            showPrompt = true;
+            break;
+          }
         }
       }
     }

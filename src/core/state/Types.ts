@@ -1,5 +1,12 @@
 export type EntityId = number;
 
+export type DeviceType = "kbm" | "gamepad";
+
+export interface DeviceAssignment {
+  type: DeviceType;
+  gamepadIndex: number; // -1 for kbm
+}
+
 export interface Vec2 {
   x: number;
   y: number;

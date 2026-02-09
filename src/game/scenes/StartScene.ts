@@ -25,7 +25,7 @@ export class StartScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    this.input.once("pointerdown", () => this.scene.start("MatchScene"));
-    this.input.keyboard!.once("keydown", () => this.scene.start("MatchScene"));
+    this.input.once("pointerdown", () => this.scene.start("LobbyScene"));
+    this.input.keyboard!.once("keydown", () => this.scene.start("LobbyScene"));
   }
 }

@@ -80,6 +80,13 @@ export interface EnemyKilledEvent {
   killerBulletOwnerId: EntityId;
 }
 
+export interface PlayerJoinedEvent {
+  type: "player_joined";
+  playerId: EntityId;
+  slot: number;
+  pos: Vec2;
+}
+
 export type GameEvent =
   | BulletFiredEvent
   | HitPlayerEvent
@@ -93,4 +100,5 @@ export type GameEvent =
   | PlayerBledOutEvent
   | PlayerRespawnedEvent
   | EnemySpawnedEvent
-  | EnemyKilledEvent;
+  | EnemyKilledEvent
+  | PlayerJoinedEvent;
