@@ -1,4 +1,5 @@
 import type { GameState } from "../../state/Types";
+import { PVP_MATCH_DURATION } from "../../state/Defaults";
 
 export function modeRulesSystem(state: GameState, dt: number): void {
   if (state.match.mode === "coop") {
@@ -26,7 +27,7 @@ function coopRules(state: GameState): void {
 }
 
 function pvpRules(state: GameState): void {
-  // PvP time mode: match timer tracked by tick count
-  // End condition will be checked by UI layer reading match.tick
-  // Score = kills tracked per player
+  if (state.match.tick >= PVP_MATCH_DURATION) {
+    state.match.gameOver = true;
+  }
 }

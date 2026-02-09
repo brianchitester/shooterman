@@ -1,6 +1,6 @@
 import type { GameState } from "../../state/Types";
 import type { EventBus } from "../../events/EventBus";
-import { ENEMY_CONTACT_DAMAGE, HIT_IFRAMES, CELL_SIZE, TILE_COLS, TILE_ROWS, DOWNED_BLEEDOUT_TIMER, PVP_RESPAWN_DELAY } from "../../state/Defaults";
+import { ENEMY_CONTACT_DAMAGE, HIT_IFRAMES, CELL_SIZE, TILE_COLS, TILE_ROWS, DOWNED_BLEEDOUT_TIMER, PVP_RESPAWN_DELAY, PLAYER_KNOCKBACK } from "../../state/Defaults";
 
 // Simple circle collision radius (half a cell)
 const PLAYER_RADIUS = 16;
@@ -97,6 +97,14 @@ export function collisionSystem(state: GameState, events: EventBus): void {
       const hitDist = BULLET_RADIUS + PLAYER_RADIUS;
       if (distSq(bullet.pos.x, bullet.pos.y, player.pos.x, player.pos.y) < hitDist * hitDist) {
         player.hp -= bullet.damage;
+
+        // Knockback: instant position push along bullet direction
+        const bvLen = Math.sqrt(bullet.vel.x * bullet.vel.x + bullet.vel.y * bullet.vel.y);
+        if (bvLen > 0) {
+          player.pos.x += (bullet.vel.x / bvLen) * PLAYER_KNOCKBACK;
+          player.pos.y += (bullet.vel.y / bvLen) * PLAYER_KNOCKBACK;
+        }
+
         events.emit({
           type: "hit_player",
           bulletId: bullet.id,

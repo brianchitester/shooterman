@@ -38,11 +38,15 @@ export const SHOOTER_BULLET_SPEED = 350; // px/s
 export const SHOOTER_BULLET_DAMAGE = 1;
 export const SHOOTER_BULLET_TTL = 90; // ticks (1.5s)
 export const SHOOTER_KNOCKBACK = 12; // px, less knockback than chaser (heavier)
+export const PLAYER_KNOCKBACK = 12; // px, PvP bullet hit knockback
 export const SHOOTER_SCORE = 200; // tougher enemy, worth more
 export const SHOOTER_SPAWN_INTERVAL = 10; // every 10th spawn
 
 // Tile balance
 export const BREAKABLE_TILE_HP = 2;
+
+// PvP match
+export const PVP_MATCH_DURATION = 7200; // ticks (120s × 60)
 
 // Respawn / invuln
 export const PVP_RESPAWN_DELAY = 30; // ticks (0.5s)

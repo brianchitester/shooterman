@@ -111,7 +111,15 @@ export class MatchScene extends Phaser.Scene {
     if (this.state.match.gameOver && !this.gameOverLaunched) {
       this.gameOverLaunched = true;
       this.scene.pause();
-      this.scene.launch("GameOverScene", { score: this.state.match.score });
+      this.scene.launch("GameOverScene", {
+        mode: this.state.match.mode,
+        score: this.state.match.score,
+        players: this.state.players.map(p => ({
+          slot: p.slot,
+          kills: p.kills,
+          deaths: p.deaths,
+        })),
+      });
     }
   }
 
