@@ -127,8 +127,10 @@ export class RenderWorld {
       const enemyBullet = this.enemyBulletGfx[i];
 
       if (b.active) {
-        const rx = prev.bullets[i].x + (b.pos.x - prev.bullets[i].x) * alpha;
-        const ry = prev.bullets[i].y + (b.pos.y - prev.bullets[i].y) * alpha;
+        // Snap on first frame (slot just activated) to avoid ghost lerp from stale prev
+        const snap = !prev.bulletWasActive[i];
+        const rx = snap ? b.pos.x : prev.bullets[i].x + (b.pos.x - prev.bullets[i].x) * alpha;
+        const ry = snap ? b.pos.y : prev.bullets[i].y + (b.pos.y - prev.bullets[i].y) * alpha;
 
         if (b.fromEnemy) {
           enemyBullet.setPosition(rx, ry);
@@ -152,8 +154,10 @@ export class RenderWorld {
       const shooter = this.shooterGfx[i];
 
       if (e.active) {
-        const rx = prev.enemies[i].x + (e.pos.x - prev.enemies[i].x) * alpha;
-        const ry = prev.enemies[i].y + (e.pos.y - prev.enemies[i].y) * alpha;
+        // Snap on first frame (slot just activated) to avoid ghost lerp from stale prev
+        const snap = !prev.enemyWasActive[i];
+        const rx = snap ? e.pos.x : prev.enemies[i].x + (e.pos.x - prev.enemies[i].x) * alpha;
+        const ry = snap ? e.pos.y : prev.enemies[i].y + (e.pos.y - prev.enemies[i].y) * alpha;
 
         // Telegraph: pulse alpha while spawning
         const a = e.spawnTimer > 0
