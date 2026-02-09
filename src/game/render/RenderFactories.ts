@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import type { TileGrid } from "../../core/state/Types";
+import type { TileGrid, EnemyType } from "../../core/state/Types";
 import { CELL_SIZE } from "../../core/state/Defaults";
 
 export const PLAYER_COLORS: readonly number[] = [
@@ -17,7 +17,9 @@ const BULLET_RADIUS = 3;   // 6px diameter
 const ENEMY_RADIUS = 12;   // 24px diameter
 
 const BULLET_COLOR = 0xff8c00;
-const ENEMY_COLOR = 0x8b0000;
+const ENEMY_BULLET_COLOR = 0xda70d6; // orchid — distinct from player bullets
+const CHASER_COLOR = 0x8b0000;
+const SHOOTER_COLOR = 0x6a0dad; // purple
 
 const TILE_SOLID_COLOR = 0x444444;
 const TILE_BREAKABLE_COLOR = 0x8b6914;
@@ -50,13 +52,44 @@ export function createBulletGraphic(scene: Phaser.Scene): Phaser.GameObjects.Gra
   return g;
 }
 
-export function createEnemyGraphic(scene: Phaser.Scene): Phaser.GameObjects.Graphics {
+export function createEnemyBulletGraphic(scene: Phaser.Scene): Phaser.GameObjects.Graphics {
   const g = scene.add.graphics();
-  g.fillStyle(ENEMY_COLOR, 1);
+  g.fillStyle(ENEMY_BULLET_COLOR, 1);
+  g.fillCircle(0, 0, BULLET_RADIUS);
+  g.setVisible(false);
+  g.setDepth(4);
+  return g;
+}
+
+export function createChaserEnemyGraphic(scene: Phaser.Scene): Phaser.GameObjects.Graphics {
+  const g = scene.add.graphics();
+  g.fillStyle(CHASER_COLOR, 1);
   g.fillCircle(0, 0, ENEMY_RADIUS);
   g.setVisible(false);
   g.setDepth(2);
   return g;
+}
+
+export function createShooterEnemyGraphic(scene: Phaser.Scene): Phaser.GameObjects.Graphics {
+  const g = scene.add.graphics();
+  g.fillStyle(SHOOTER_COLOR, 1);
+  // Equilateral triangle pointing right, ~12px "radius" equivalent
+  const r = ENEMY_RADIUS;
+  g.fillTriangle(
+    r, 0,                                   // right tip
+    -r * 0.5, -r * 0.866,                   // top-left
+    -r * 0.5, r * 0.866,                    // bottom-left
+  );
+  g.setVisible(false);
+  g.setDepth(2);
+  return g;
+}
+
+export function createEnemyGraphicByType(scene: Phaser.Scene, type: EnemyType): Phaser.GameObjects.Graphics {
+  switch (type) {
+    case "chaser": return createChaserEnemyGraphic(scene);
+    case "shooter": return createShooterEnemyGraphic(scene);
+  }
 }
 
 export function createTileGraphics(scene: Phaser.Scene): Phaser.GameObjects.Graphics {

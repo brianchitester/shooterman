@@ -6,7 +6,6 @@ import { ENEMY_CONTACT_DAMAGE, HIT_IFRAMES, CELL_SIZE, TILE_COLS, TILE_ROWS, DOW
 const PLAYER_RADIUS = 16;
 const ENEMY_RADIUS = 16;
 const BULLET_RADIUS = 4;
-const ENEMY_KNOCKBACK_PX = 24; // instant position offset along bullet direction
 
 function distSq(ax: number, ay: number, bx: number, by: number): number {
   const dx = ax - bx;
@@ -22,54 +21,56 @@ export function collisionSystem(state: GameState, events: EventBus): void {
 
     let consumed = false;
 
-    // 1) Bullets vs Enemies
-    for (let e = 0; e < state.enemies.length; e++) {
-      if (consumed) break;
-      const enemy = state.enemies[e];
-      if (!enemy.active || enemy.spawnTimer > 0) continue;
+    // 1) Bullets vs Enemies — enemy bullets skip this entirely
+    if (!bullet.fromEnemy) {
+      for (let e = 0; e < state.enemies.length; e++) {
+        if (consumed) break;
+        const enemy = state.enemies[e];
+        if (!enemy.active || enemy.spawnTimer > 0) continue;
 
-      const hitDist = BULLET_RADIUS + ENEMY_RADIUS;
-      if (distSq(bullet.pos.x, bullet.pos.y, enemy.pos.x, enemy.pos.y) < hitDist * hitDist) {
-        enemy.hp -= bullet.damage;
+        const hitDist = BULLET_RADIUS + ENEMY_RADIUS;
+        if (distSq(bullet.pos.x, bullet.pos.y, enemy.pos.x, enemy.pos.y) < hitDist * hitDist) {
+          enemy.hp -= bullet.damage;
 
-        // Knockback: instant position push along bullet direction
-        const bvLen = Math.sqrt(bullet.vel.x * bullet.vel.x + bullet.vel.y * bullet.vel.y);
-        if (bvLen > 0) {
-          enemy.pos.x += (bullet.vel.x / bvLen) * ENEMY_KNOCKBACK_PX;
-          enemy.pos.y += (bullet.vel.y / bvLen) * ENEMY_KNOCKBACK_PX;
-        }
+          // Knockback: instant position push along bullet direction
+          const bvLen = Math.sqrt(bullet.vel.x * bullet.vel.x + bullet.vel.y * bullet.vel.y);
+          if (bvLen > 0 && enemy.knockback > 0) {
+            enemy.pos.x += (bullet.vel.x / bvLen) * enemy.knockback;
+            enemy.pos.y += (bullet.vel.y / bvLen) * enemy.knockback;
+          }
 
-        events.emit({
-          type: "hit_enemy",
-          bulletId: bullet.id,
-          enemyId: enemy.id,
-          damage: bullet.damage,
-        });
-
-        if (enemy.hp <= 0) {
-          enemy.active = false;
           events.emit({
-            type: "enemy_killed",
+            type: "hit_enemy",
+            bulletId: bullet.id,
             enemyId: enemy.id,
-            killerBulletOwnerId: bullet.ownerId,
+            damage: bullet.damage,
           });
 
-          // Award score in co-op, kills in PvP
-          if (state.match.mode === "coop") {
-            state.match.score += 100;
-          } else {
-            // Find the bullet owner and credit the kill
-            for (let p = 0; p < state.players.length; p++) {
-              if (state.players[p].id === bullet.ownerId) {
-                state.players[p].kills++;
-                break;
+          if (enemy.hp <= 0) {
+            enemy.active = false;
+            events.emit({
+              type: "enemy_killed",
+              enemyId: enemy.id,
+              killerBulletOwnerId: bullet.ownerId,
+            });
+
+            // Award score in co-op, kills in PvP
+            if (state.match.mode === "coop") {
+              state.match.score += enemy.score;
+            } else {
+              // Find the bullet owner and credit the kill
+              for (let p = 0; p < state.players.length; p++) {
+                if (state.players[p].id === bullet.ownerId) {
+                  state.players[p].kills++;
+                  break;
+                }
               }
             }
           }
-        }
 
-        bullet.active = false;
-        consumed = true;
+          bullet.active = false;
+          consumed = true;
+        }
       }
     }
     if (consumed) continue;
@@ -79,12 +80,19 @@ export function collisionSystem(state: GameState, events: EventBus): void {
       if (consumed) break;
       const player = state.players[p];
       if (!player.alive) continue;
-      // No self-damage
-      if (player.id === bullet.ownerId) continue;
-      // Co-op: friendly fire OFF (all teammates)
-      if (state.match.mode === "coop") continue;
-      // PvP: invulnerable players are immune
-      if (player.invulnTimer > 0) continue;
+
+      if (bullet.fromEnemy) {
+        // Enemy bullets always hit players (skip self-damage and friendly-fire checks)
+        // Still respect invuln timer
+        if (player.invulnTimer > 0) continue;
+      } else {
+        // No self-damage
+        if (player.id === bullet.ownerId) continue;
+        // Co-op: friendly fire OFF (all teammates)
+        if (state.match.mode === "coop") continue;
+        // PvP: invulnerable players are immune
+        if (player.invulnTimer > 0) continue;
+      }
 
       const hitDist = BULLET_RADIUS + PLAYER_RADIUS;
       if (distSq(bullet.pos.x, bullet.pos.y, player.pos.x, player.pos.y) < hitDist * hitDist) {
@@ -97,16 +105,30 @@ export function collisionSystem(state: GameState, events: EventBus): void {
         });
 
         if (player.hp <= 0) {
-          player.alive = false;
           player.hp = 0;
-          player.deaths++;
-          player.respawnTimer = PVP_RESPAWN_DELAY;
+          if (state.match.mode === "coop") {
+            // Co-op: player goes downed instead of dying immediately
+            player.downed = true;
+            player.alive = false;
+            player.downedTimer = DOWNED_BLEEDOUT_TIMER;
+            events.emit({
+              type: "player_downed",
+              playerId: player.id,
+              pos: { x: player.pos.x, y: player.pos.y },
+            });
+          } else {
+            player.alive = false;
+            player.deaths++;
+            player.respawnTimer = PVP_RESPAWN_DELAY;
 
-          // Credit killer
-          for (let k = 0; k < state.players.length; k++) {
-            if (state.players[k].id === bullet.ownerId) {
-              state.players[k].kills++;
-              break;
+            // Credit killer (only for player bullets)
+            if (!bullet.fromEnemy) {
+              for (let k = 0; k < state.players.length; k++) {
+                if (state.players[k].id === bullet.ownerId) {
+                  state.players[k].kills++;
+                  break;
+                }
+              }
             }
           }
         }
@@ -117,7 +139,7 @@ export function collisionSystem(state: GameState, events: EventBus): void {
     }
     if (consumed) continue;
 
-    // 3) Bullets vs Tiles
+    // 3) Bullets vs Tiles (both player and enemy bullets)
     const cellX = (bullet.pos.x / CELL_SIZE) | 0;
     const cellY = (bullet.pos.y / CELL_SIZE) | 0;
     if (cellX >= 0 && cellX < TILE_COLS && cellY >= 0 && cellY < TILE_ROWS) {

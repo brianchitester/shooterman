@@ -47,6 +47,7 @@ export function shootingSystem(
       bullet.ttl = BULLET_TTL;
       bullet.damage = BULLET_DAMAGE;
       bullet.active = true;
+      bullet.fromEnemy = false;
 
       player.fireCooldown = FIRE_COOLDOWN;
 

@@ -6,7 +6,9 @@ import {
   createPlayerGraphic,
   createAimIndicator,
   createBulletGraphic,
-  createEnemyGraphic,
+  createEnemyBulletGraphic,
+  createChaserEnemyGraphic,
+  createShooterEnemyGraphic,
   createTileGraphics,
   drawTiles,
 } from "./RenderFactories";
@@ -17,7 +19,9 @@ export class RenderWorld {
   private aimGfx: Phaser.GameObjects.Graphics[] = [];
   private reviveRingGfx: Phaser.GameObjects.Graphics[] = [];
   private bulletGfx: Phaser.GameObjects.Graphics[] = [];
-  private enemyGfx: Phaser.GameObjects.Graphics[] = [];
+  private enemyBulletGfx: Phaser.GameObjects.Graphics[] = [];
+  private chaserGfx: Phaser.GameObjects.Graphics[] = [];
+  private shooterGfx: Phaser.GameObjects.Graphics[] = [];
   private tileGfx!: Phaser.GameObjects.Graphics;
 
   create(scene: Phaser.Scene, state: GameState): void {
@@ -41,14 +45,16 @@ export class RenderWorld {
       this.reviveRingGfx[i] = ring;
     }
 
-    // Bullet pool
+    // Bullet pool — one player-bullet graphic + one enemy-bullet graphic per slot
     for (let i = 0; i < MAX_BULLETS; i++) {
       this.bulletGfx[i] = createBulletGraphic(scene);
+      this.enemyBulletGfx[i] = createEnemyBulletGraphic(scene);
     }
 
-    // Enemy pool
+    // Enemy pool — one chaser + one shooter graphic per slot
     for (let i = 0; i < MAX_ENEMIES; i++) {
-      this.enemyGfx[i] = createEnemyGraphic(scene);
+      this.chaserGfx[i] = createChaserEnemyGraphic(scene);
+      this.shooterGfx[i] = createShooterEnemyGraphic(scene);
     }
   }
 
@@ -114,40 +120,64 @@ export class RenderWorld {
       this.reviveRingGfx[i].setVisible(false);
     }
 
-    // Bullets
+    // Bullets — show correct graphic based on fromEnemy
     for (let i = 0; i < state.bullets.length; i++) {
       const b = state.bullets[i];
-      const gfx = this.bulletGfx[i];
+      const playerBullet = this.bulletGfx[i];
+      const enemyBullet = this.enemyBulletGfx[i];
 
       if (b.active) {
         const rx = prev.bullets[i].x + (b.pos.x - prev.bullets[i].x) * alpha;
         const ry = prev.bullets[i].y + (b.pos.y - prev.bullets[i].y) * alpha;
-        gfx.setPosition(rx, ry);
-        gfx.setVisible(true);
+
+        if (b.fromEnemy) {
+          enemyBullet.setPosition(rx, ry);
+          enemyBullet.setVisible(true);
+          playerBullet.setVisible(false);
+        } else {
+          playerBullet.setPosition(rx, ry);
+          playerBullet.setVisible(true);
+          enemyBullet.setVisible(false);
+        }
       } else {
-        gfx.setVisible(false);
+        playerBullet.setVisible(false);
+        enemyBullet.setVisible(false);
       }
     }
 
-    // Enemies
+    // Enemies — show correct graphic based on type
     for (let i = 0; i < state.enemies.length; i++) {
       const e = state.enemies[i];
-      const gfx = this.enemyGfx[i];
+      const chaser = this.chaserGfx[i];
+      const shooter = this.shooterGfx[i];
 
       if (e.active) {
         const rx = prev.enemies[i].x + (e.pos.x - prev.enemies[i].x) * alpha;
         const ry = prev.enemies[i].y + (e.pos.y - prev.enemies[i].y) * alpha;
-        gfx.setPosition(rx, ry);
-        gfx.setVisible(true);
 
         // Telegraph: pulse alpha while spawning
-        if (e.spawnTimer > 0) {
-          gfx.setAlpha(((e.spawnTimer >> 2) & 1) ? 0.2 : 0.5);
+        const a = e.spawnTimer > 0
+          ? (((e.spawnTimer >> 2) & 1) ? 0.2 : 0.5)
+          : 1;
+
+        if (e.type === "shooter") {
+          shooter.setPosition(rx, ry);
+          shooter.setVisible(true);
+          shooter.setAlpha(a);
+          // Rotate triangle to face movement direction
+          if (e.vel.x !== 0 || e.vel.y !== 0) {
+            shooter.setRotation(Math.atan2(e.vel.y, e.vel.x));
+          }
+          chaser.setVisible(false);
         } else {
-          gfx.setAlpha(1);
+          chaser.setPosition(rx, ry);
+          chaser.setVisible(true);
+          chaser.setAlpha(a);
+          shooter.setVisible(false);
         }
       } else {
-        gfx.setVisible(false);
+        chaser.setVisible(false);
+        shooter.setVisible(false);
       }
     }
   }

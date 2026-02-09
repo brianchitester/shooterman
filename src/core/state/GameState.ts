@@ -37,6 +37,7 @@ function createBulletSlot(): BulletState {
     ttl: 0,
     damage: 0,
     active: false,
+    fromEnemy: false,
   };
 }
 
@@ -49,6 +50,9 @@ function createEnemySlot(): EnemyState {
     hp: 0,
     active: false,
     spawnTimer: 0,
+    fireCooldown: 0,
+    knockback: 0,
+    score: 0,
   };
 }
 
@@ -112,6 +116,7 @@ export function createGameState(mode: Mode, playerCount: number, rngSeed: number
     rngState: rngSeed,
     nextEntityId,
     gameOver: false,
+    spawnCount: 0,
   };
 
   return {
