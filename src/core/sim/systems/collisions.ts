@@ -6,6 +6,7 @@ import { ENEMY_CONTACT_DAMAGE, HIT_IFRAMES, CELL_SIZE, TILE_COLS, TILE_ROWS, DOW
 const PLAYER_RADIUS = 16;
 const ENEMY_RADIUS = 16;
 const BULLET_RADIUS = 4;
+const ENEMY_KNOCKBACK_PX = 24; // instant position offset along bullet direction
 
 function distSq(ax: number, ay: number, bx: number, by: number): number {
   const dx = ax - bx;
@@ -30,6 +31,14 @@ export function collisionSystem(state: GameState, events: EventBus): void {
       const hitDist = BULLET_RADIUS + ENEMY_RADIUS;
       if (distSq(bullet.pos.x, bullet.pos.y, enemy.pos.x, enemy.pos.y) < hitDist * hitDist) {
         enemy.hp -= bullet.damage;
+
+        // Knockback: instant position push along bullet direction
+        const bvLen = Math.sqrt(bullet.vel.x * bullet.vel.x + bullet.vel.y * bullet.vel.y);
+        if (bvLen > 0) {
+          enemy.pos.x += (bullet.vel.x / bvLen) * ENEMY_KNOCKBACK_PX;
+          enemy.pos.y += (bullet.vel.y / bvLen) * ENEMY_KNOCKBACK_PX;
+        }
+
         events.emit({
           type: "hit_enemy",
           bulletId: bullet.id,
