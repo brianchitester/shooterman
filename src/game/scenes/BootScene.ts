@@ -6,6 +6,6 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.scene.start("MatchScene");
+    this.scene.start("StartScene");
   }
 }

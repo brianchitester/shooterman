@@ -40,6 +40,17 @@ export class MatchScene extends Phaser.Scene {
     snapshotPositions(this.state, this.prev);
 
     this.renderWorld.create(this, this.state);
+
+    // Pause on Escape
+    this.input.keyboard!.on("keydown-ESC", () => {
+      this.scene.pause();
+      this.scene.launch("PauseScene");
+    });
+
+    // Reset accumulator when resuming so paused time doesn't cause catch-up
+    this.events.on("resume", () => {
+      this.accumulator = 0;
+    });
   }
 
   update(_time: number, delta: number): void {
