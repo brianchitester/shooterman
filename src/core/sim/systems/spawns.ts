@@ -3,7 +3,7 @@ import type { SeededRng } from "../rng/seedRng";
 import type { EventBus } from "../../events/EventBus";
 import {
   ARENA_WIDTH, ARENA_HEIGHT, CELL_SIZE,
-  SPAWN_SAFETY_DISTANCE, ENEMY_HP,
+  SPAWN_SAFETY_DISTANCE, ENEMY_HP, SPAWN_TELEGRAPH_TICKS,
   SPAWN_RATE_BASE_INTERVAL, SPAWN_RATE_MIN_INTERVAL, SPAWN_RAMP_DURATION,
   ENEMY_CAP_BASE, ENEMY_CAP_PER_PLAYER,
   MAX_ENEMIES,
@@ -92,6 +92,7 @@ export function spawnSystem(state: GameState, dt: number, rng: SeededRng, events
   enemy.vel.y = 0;
   enemy.hp = ENEMY_HP;
   enemy.active = true;
+  enemy.spawnTimer = SPAWN_TELEGRAPH_TICKS;
 
   events.emit({
     type: "enemy_spawned",

@@ -44,6 +44,7 @@ export interface EnemyState {
   vel: Vec2;
   hp: number;
   active: boolean;
+  spawnTimer: number; // ticks remaining in telegraph (0 = fully spawned)
 }
 
 export type TileType = "empty" | "solid" | "breakable";

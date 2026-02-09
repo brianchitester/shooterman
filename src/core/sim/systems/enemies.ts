@@ -9,6 +9,12 @@ export function enemyAISystem(state: GameState, dt: number): void {
     const enemy = state.enemies[e];
     if (!enemy.active) continue;
 
+    // Tick down spawn telegraph
+    if (enemy.spawnTimer > 0) {
+      enemy.spawnTimer--;
+      continue; // Don't move or act while telegraphing
+    }
+
     // Find nearest alive player
     let nearestDistSq = Infinity;
     let nearestX = enemy.pos.x;

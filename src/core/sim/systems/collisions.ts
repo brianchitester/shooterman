@@ -25,7 +25,7 @@ export function collisionSystem(state: GameState, events: EventBus): void {
     for (let e = 0; e < state.enemies.length; e++) {
       if (consumed) break;
       const enemy = state.enemies[e];
-      if (!enemy.active) continue;
+      if (!enemy.active || enemy.spawnTimer > 0) continue;
 
       const hitDist = BULLET_RADIUS + ENEMY_RADIUS;
       if (distSq(bullet.pos.x, bullet.pos.y, enemy.pos.x, enemy.pos.y) < hitDist * hitDist) {
@@ -136,7 +136,7 @@ export function collisionSystem(state: GameState, events: EventBus): void {
   // 4) Enemies vs Players (contact damage)
   for (let e = 0; e < state.enemies.length; e++) {
     const enemy = state.enemies[e];
-    if (!enemy.active) continue;
+    if (!enemy.active || enemy.spawnTimer > 0) continue;
 
     for (let p = 0; p < state.players.length; p++) {
       const player = state.players[p];

@@ -112,6 +112,13 @@ export class RenderWorld {
         const ry = prev.enemies[i].y + (e.pos.y - prev.enemies[i].y) * alpha;
         gfx.setPosition(rx, ry);
         gfx.setVisible(true);
+
+        // Telegraph: pulse alpha while spawning
+        if (e.spawnTimer > 0) {
+          gfx.setAlpha(((e.spawnTimer >> 2) & 1) ? 0.2 : 0.5);
+        } else {
+          gfx.setAlpha(1);
+        }
       } else {
         gfx.setVisible(false);
       }

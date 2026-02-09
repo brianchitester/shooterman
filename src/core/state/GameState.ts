@@ -48,6 +48,7 @@ function createEnemySlot(): EnemyState {
     vel: { x: 0, y: 0 },
     hp: 0,
     active: false,
+    spawnTimer: 0,
   };
 }
 
