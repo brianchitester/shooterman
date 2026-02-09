@@ -10,10 +10,12 @@ import {
   createTileGraphics,
   drawTiles,
 } from "./RenderFactories";
+import { REVIVE_HOLD_TIME } from "../../core/state/Defaults";
 
 export class RenderWorld {
   private playerGfx: Phaser.GameObjects.Graphics[] = [];
   private aimGfx: Phaser.GameObjects.Graphics[] = [];
+  private reviveRingGfx: Phaser.GameObjects.Graphics[] = [];
   private bulletGfx: Phaser.GameObjects.Graphics[] = [];
   private enemyGfx: Phaser.GameObjects.Graphics[] = [];
   private tileGfx!: Phaser.GameObjects.Graphics;
@@ -33,6 +35,10 @@ export class RenderWorld {
     for (let i = 0; i < MAX_PLAYERS; i++) {
       this.playerGfx[i] = createPlayerGraphic(scene, i);
       this.aimGfx[i] = createAimIndicator(scene, i);
+      const ring = scene.add.graphics();
+      ring.setVisible(false);
+      ring.setDepth(5);
+      this.reviveRingGfx[i] = ring;
     }
 
     // Bullet pool
@@ -70,14 +76,34 @@ export class RenderWorld {
           gfx.setAlpha(((p.invulnTimer >> 2) & 1) ? 0.3 : 1);
         }
 
-        // Aim indicator
-        const angle = Math.atan2(p.aim.y, p.aim.x);
-        aim.setPosition(rx, ry);
-        aim.setRotation(angle);
-        aim.setVisible(true);
+        // Aim indicator — hide when downed (can't shoot)
+        if (p.downed) {
+          aim.setVisible(false);
+        } else {
+          const angle = Math.atan2(p.aim.y, p.aim.x);
+          aim.setPosition(rx, ry);
+          aim.setRotation(angle);
+          aim.setVisible(true);
+        }
+
+        // Revive progress ring
+        const ring = this.reviveRingGfx[i];
+        if (p.downed && p.reviveProgress > 0) {
+          ring.clear();
+          ring.lineStyle(3, 0x2ecc71, 0.9);
+          const progress = p.reviveProgress / REVIVE_HOLD_TIME;
+          ring.beginPath();
+          ring.arc(0, 0, 20, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2, false);
+          ring.strokePath();
+          ring.setPosition(rx, ry);
+          ring.setVisible(true);
+        } else {
+          ring.setVisible(false);
+        }
       } else {
         gfx.setVisible(false);
         aim.setVisible(false);
+        this.reviveRingGfx[i].setVisible(false);
       }
     }
 
@@ -85,6 +111,7 @@ export class RenderWorld {
     for (let i = state.players.length; i < MAX_PLAYERS; i++) {
       this.playerGfx[i].setVisible(false);
       this.aimGfx[i].setVisible(false);
+      this.reviveRingGfx[i].setVisible(false);
     }
 
     // Bullets

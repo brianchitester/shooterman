@@ -69,6 +69,7 @@ export interface MatchState {
   rngSeed: number;
   rngState: number;
   nextEntityId: number;
+  gameOver: boolean;
 }
 
 export interface GameState {

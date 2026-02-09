@@ -111,6 +111,7 @@ export function createGameState(mode: Mode, playerCount: number, rngSeed: number
     rngSeed,
     rngState: rngSeed,
     nextEntityId,
+    gameOver: false,
   };
 
   return {

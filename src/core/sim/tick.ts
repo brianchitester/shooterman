@@ -20,6 +20,8 @@ export function step(
   rng: SeededRng,
   events: EventBus,
 ): void {
+  if (state.match.gameOver) return;
+
   applyIntents(state, intents, DT);
   movementSystem(state, DT);
   shootingSystem(state, intents, DT, rng, events);

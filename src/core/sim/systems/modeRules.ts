@@ -21,9 +21,7 @@ function coopRules(state: GameState): void {
   }
 
   if (!anyAliveOrDowned) {
-    // Game over — could emit an event or set a flag
-    // For now, the tick just stops advancing meaningfully
-    // (M1 doesn't have end-screen UI)
+    state.match.gameOver = true;
   }
 }
 

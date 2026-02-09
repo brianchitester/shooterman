@@ -8,6 +8,7 @@ import type { GameState } from "../../core/state/Types";
 import type { SeededRng } from "../../core/sim/rng/seedRng";
 import type { EventBus } from "../../core/events/EventBus";
 import { RenderWorld } from "../render/RenderWorld";
+import { HUD } from "../render/HUD";
 import { InputManager } from "../input/InputManager";
 import { createPrevPositions, snapshotPositions } from "../render/PrevPositions";
 import type { PrevPositions } from "../render/PrevPositions";
@@ -21,6 +22,7 @@ export class MatchScene extends Phaser.Scene {
   private eventBus!: EventBus;
   private inputMgr!: InputManager;
   private renderWorld!: RenderWorld;
+  private hud!: HUD;
   private prev!: PrevPositions;
   private accumulator = 0;
 
@@ -34,12 +36,14 @@ export class MatchScene extends Phaser.Scene {
     this.eventBus = createEventBus();
     this.inputMgr = new InputManager(this);
     this.renderWorld = new RenderWorld();
+    this.hud = new HUD();
     this.prev = createPrevPositions();
 
     // Initialize prev positions to current so first frame doesn't lerp from 0,0
     snapshotPositions(this.state, this.prev);
 
     this.renderWorld.create(this, this.state);
+    this.hud.create(this);
 
     // Pause on Escape
     this.input.keyboard!.on("keydown-ESC", () => {
@@ -77,6 +81,7 @@ export class MatchScene extends Phaser.Scene {
 
     // Render
     this.renderWorld.update(this.state, this.prev, alpha);
+    this.hud.update(this.state);
 
     // Drain events (log count for now)
     const evts = this.eventBus.drain();
