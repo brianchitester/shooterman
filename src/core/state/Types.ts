@@ -31,6 +31,7 @@ export interface PlayerState {
   respawnTimer: number; // ticks
   invulnTimer: number; // ticks (cannot deal damage while > 0)
   fireCooldown: number; // ticks
+  weaponId: string;
   kills: number;
   deaths: number;
   team: number;
@@ -45,6 +46,7 @@ export interface BulletState {
   damage: number;
   active: boolean;
   fromEnemy: boolean;
+  weaponId: string;
 }
 
 export interface EnemyState {

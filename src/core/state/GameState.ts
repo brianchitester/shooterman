@@ -22,6 +22,7 @@ export function createPlayer(slot: number, nextEntityId: number): PlayerState {
     respawnTimer: 0,
     invulnTimer: 0,
     fireCooldown: 0,
+    weaponId: "auto",
     kills: 0,
     deaths: 0,
     team: 0,
@@ -38,6 +39,7 @@ function createBulletSlot(): BulletState {
     damage: 0,
     active: false,
     fromEnemy: false,
+    weaponId: "auto",
   };
 }
 

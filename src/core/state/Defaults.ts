@@ -16,6 +16,11 @@ export const PLAYER_HP = 3;
 export const PLAYER_MOVE_SPEED = 250; // px/s
 export const DOWNED_CRAWL_SPEED = 75; // px/s (30% of normal)
 
+// Collision radii
+export const PLAYER_RADIUS = 16;
+export const ENEMY_RADIUS = 16;
+export const BULLET_RADIUS = 4;
+
 // Bullet balance
 export const BULLET_DAMAGE = 1;
 export const BULLET_SPEED = 600; // px/s
