@@ -1,11 +1,6 @@
 import type { GameState } from "../../state/Types";
 import type { EventBus } from "../../events/EventBus";
-import { ENEMY_CONTACT_DAMAGE, HIT_IFRAMES, CELL_SIZE, TILE_COLS, TILE_ROWS, DOWNED_BLEEDOUT_TIMER, PVP_RESPAWN_DELAY, PLAYER_KNOCKBACK } from "../../state/Defaults";
-
-// Simple circle collision radius (half a cell)
-const PLAYER_RADIUS = 16;
-const ENEMY_RADIUS = 16;
-const BULLET_RADIUS = 4;
+import { ENEMY_CONTACT_DAMAGE, HIT_IFRAMES, CELL_SIZE, TILE_COLS, TILE_ROWS, DOWNED_BLEEDOUT_TIMER, PVP_RESPAWN_DELAY, PLAYER_KNOCKBACK, PLAYER_RADIUS, ENEMY_RADIUS, BULLET_RADIUS } from "../../state/Defaults";
 
 function distSq(ax: number, ay: number, bx: number, by: number): number {
   const dx = ax - bx;

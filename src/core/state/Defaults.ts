@@ -21,11 +21,7 @@ export const PLAYER_RADIUS = 16;
 export const ENEMY_RADIUS = 16;
 export const BULLET_RADIUS = 4;
 
-// Bullet balance
-export const BULLET_DAMAGE = 1;
-export const BULLET_SPEED = 600; // px/s
-export const BULLET_TTL = 60; // ticks (1.0s)
-export const FIRE_COOLDOWN = 15; // ticks (4/sec)
+// Player bullet balance now in src/core/defs/weapons.ts (WeaponDef)
 
 // Enemy balance
 export const ENEMY_HP = 2;

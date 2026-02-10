@@ -5,13 +5,12 @@ import { createEventBus } from "../core/events/EventBus";
 import { step } from "../core/sim/tick";
 import { collisionSystem } from "../core/sim/systems/collisions";
 import type { PlayerIntent } from "../core/state/Types";
-import {
-  PVP_MATCH_DURATION,
-  PLAYER_KNOCKBACK,
-  BULLET_SPEED,
-  BULLET_DAMAGE,
-  BULLET_TTL,
-} from "../core/state/Defaults";
+import { PVP_MATCH_DURATION, PLAYER_KNOCKBACK } from "../core/state/Defaults";
+import { WEAPON_AUTO } from "../core/defs/weapons";
+
+const BULLET_SPEED = WEAPON_AUTO.bulletSpeed;
+const BULLET_DAMAGE = WEAPON_AUTO.bulletDamage;
+const BULLET_TTL = WEAPON_AUTO.bulletTTL;
 
 function emptyIntents(count: number): PlayerIntent[] {
   const intents: PlayerIntent[] = [];

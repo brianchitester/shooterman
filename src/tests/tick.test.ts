@@ -4,7 +4,10 @@ import { createRng } from "../core/sim/rng/seedRng";
 import { createEventBus } from "../core/events/EventBus";
 import { step } from "../core/sim/tick";
 import type { PlayerIntent } from "../core/state/Types";
-import { BULLET_TTL, FIRE_COOLDOWN } from "../core/state/Defaults";
+import { WEAPON_AUTO } from "../core/defs/weapons";
+
+const BULLET_TTL = WEAPON_AUTO.bulletTTL;
+const FIRE_COOLDOWN = WEAPON_AUTO.fireRate;
 
 function emptyIntents(count: number): PlayerIntent[] {
   const intents: PlayerIntent[] = [];
