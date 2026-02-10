@@ -1,12 +1,17 @@
 import type { GameState, PlayerState, BulletState, EnemyState, TileGrid, TileCell, Mode, MatchState } from "./Types";
+import type { MapDef } from "../defs/MapDef";
+import { MAP_ARENA } from "../defs/maps";
 import {
-  ARENA_WIDTH, ARENA_HEIGHT, TILE_COLS, TILE_ROWS, CELL_SIZE,
-  MAX_BULLETS, MAX_ENEMIES, PLAYER_HP, SHARED_LIVES_BASE, SPAWN_POINTS,
+  MAX_BULLETS, MAX_ENEMIES, PLAYER_HP, SHARED_LIVES_BASE,
   BREAKABLE_TILE_HP, SPAWN_INVULN_DURATION,
 } from "./Defaults";
 
-export function createPlayer(slot: number, nextEntityId: number): PlayerState {
-  const spawn = SPAWN_POINTS[slot % SPAWN_POINTS.length];
+export function createPlayer(
+  slot: number,
+  nextEntityId: number,
+  spawnPoints: ReadonlyArray<{ x: number; y: number }>,
+): PlayerState {
+  const spawn = spawnPoints[slot % spawnPoints.length];
   return {
     id: nextEntityId,
     slot,
@@ -58,45 +63,44 @@ function createEnemySlot(): EnemyState {
   };
 }
 
-function createTileGrid(): TileGrid {
+function buildTileGrid(mapDef: MapDef): TileGrid {
   const cells: TileCell[] = [];
-  for (let row = 0; row < TILE_ROWS; row++) {
-    for (let col = 0; col < TILE_COLS; col++) {
-      // Border tiles are solid
-      if (row === 0 || row === TILE_ROWS - 1 || col === 0 || col === TILE_COLS - 1) {
-        cells[row * TILE_COLS + col] = { type: "solid", hp: 0 };
-      }
-      // Indestructible pillars at fixed symmetric positions
-      else if (
-        (row % 4 === 2 && col % 4 === 2) &&
-        row > 1 && row < TILE_ROWS - 2 && col > 1 && col < TILE_COLS - 2
-      ) {
-        cells[row * TILE_COLS + col] = { type: "solid", hp: 0 };
-      }
-      // Breakable tiles in a pattern (~25%)
-      else if ((row + col) % 3 === 0 && row > 1 && row < TILE_ROWS - 2 && col > 1 && col < TILE_COLS - 2) {
-        cells[row * TILE_COLS + col] = { type: "breakable", hp: BREAKABLE_TILE_HP };
-      }
-      // Everything else is empty
-      else {
-        cells[row * TILE_COLS + col] = { type: "empty", hp: 0 };
-      }
+  for (let i = 0; i < mapDef.cells.length; i++) {
+    const t = mapDef.cells[i];
+    switch (t) {
+      case "solid":
+        cells[i] = { type: "solid", hp: 0 };
+        break;
+      case "breakable":
+        cells[i] = { type: "breakable", hp: BREAKABLE_TILE_HP };
+        break;
+      default:
+        cells[i] = { type: "empty", hp: 0 };
+        break;
     }
   }
   return {
-    width: TILE_COLS,
-    height: TILE_ROWS,
-    cellSize: CELL_SIZE,
+    width: mapDef.cols,
+    height: mapDef.rows,
+    cellSize: mapDef.cellSize,
     cells,
+    spawnPoints: mapDef.spawnPoints,
   };
 }
 
-export function createGameState(mode: Mode, playerCount: number, rngSeed: number): GameState {
+export function createGameState(
+  mode: Mode,
+  playerCount: number,
+  rngSeed: number,
+  mapDef: MapDef = MAP_ARENA,
+): GameState {
   let nextEntityId = 1;
+
+  const tiles = buildTileGrid(mapDef);
 
   const players: PlayerState[] = [];
   for (let i = 0; i < playerCount; i++) {
-    players[i] = createPlayer(i, nextEntityId++);
+    players[i] = createPlayer(i, nextEntityId++, tiles.spawnPoints);
   }
 
   const bullets: BulletState[] = [];
@@ -117,6 +121,7 @@ export function createGameState(mode: Mode, playerCount: number, rngSeed: number
     rngSeed,
     rngState: rngSeed,
     nextEntityId,
+    mapId: mapDef.id,
     gameOver: false,
     spawnCount: 0,
   };
@@ -125,7 +130,7 @@ export function createGameState(mode: Mode, playerCount: number, rngSeed: number
     players,
     bullets,
     enemies,
-    tiles: createTileGrid(),
+    tiles,
     match,
   };
 }
@@ -133,7 +138,7 @@ export function createGameState(mode: Mode, playerCount: number, rngSeed: number
 export function addPlayerToState(state: GameState): PlayerState {
   const slot = state.players.length;
   const id = state.match.nextEntityId++;
-  const player = createPlayer(slot, id);
+  const player = createPlayer(slot, id, state.tiles.spawnPoints);
   player.invulnTimer = SPAWN_INVULN_DURATION;
   state.players.push(player);
   if (state.match.mode === "coop") {
@@ -193,6 +198,7 @@ export function cloneState(state: GameState): GameState {
       height: state.tiles.height,
       cellSize: state.tiles.cellSize,
       cells,
+      spawnPoints: state.tiles.spawnPoints,
     },
     match: { ...state.match },
   };

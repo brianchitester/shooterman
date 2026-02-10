@@ -74,6 +74,7 @@ export interface TileGrid {
   height: number;
   cellSize: number;
   cells: TileCell[]; // row-major
+  spawnPoints: ReadonlyArray<{ x: number; y: number }>;
 }
 
 export interface MatchState {
@@ -84,6 +85,7 @@ export interface MatchState {
   rngSeed: number;
   rngState: number;
   nextEntityId: number;
+  mapId: string;
   gameOver: boolean;
   spawnCount: number;
 }
