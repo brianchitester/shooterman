@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import type { Mode, DeviceAssignment } from "../../core/state/Types";
 import { MAX_PLAYERS } from "../../core/state/Defaults";
 import { PLAYER_COLORS } from "../render/RenderFactories";
+import { MAP_LIST } from "../../core/defs/maps";
 
 const SLOT_RADIUS = 24;
 const TEXT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
@@ -13,6 +14,7 @@ const TEXT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
 export class LobbyScene extends Phaser.Scene {
   private slots: (DeviceAssignment | null)[] = [];
   private mode: Mode = "coop";
+  private mapIndex = 0;
 
   // Display objects per slot
   private slotCircles: Phaser.GameObjects.Graphics[] = [];
@@ -20,6 +22,7 @@ export class LobbyScene extends Phaser.Scene {
   private slotPrompts: Phaser.GameObjects.Text[] = [];
 
   private modeText!: Phaser.GameObjects.Text;
+  private mapText!: Phaser.GameObjects.Text;
   private startPrompt!: Phaser.GameObjects.Text;
 
   constructor() {
@@ -32,6 +35,7 @@ export class LobbyScene extends Phaser.Scene {
       this.slots[i] = null;
     }
     this.mode = "coop";
+    this.mapIndex = 0;
     this.slotCircles = [];
     this.slotLabels = [];
     this.slotPrompts = [];
@@ -103,16 +107,25 @@ export class LobbyScene extends Phaser.Scene {
 
     // Mode display
     this.modeText = this.add
-      .text(cx, 440, this.getModeLabel(), {
+      .text(cx, 430, this.getModeLabel(), {
         fontSize: "24px",
         color: "#f1c40f",
         fontFamily: "monospace",
       })
       .setOrigin(0.5);
 
+    // Map display
+    this.mapText = this.add
+      .text(cx, 470, this.getMapLabel(), {
+        fontSize: "20px",
+        color: "#3498db",
+        fontFamily: "monospace",
+      })
+      .setOrigin(0.5);
+
     // Start prompt
     this.startPrompt = this.add
-      .text(cx, 550, "P1 press ENTER / START", {
+      .text(cx, 540, "P1 press ENTER / START", {
         fontSize: "20px",
         color: "#aaaaaa",
         fontFamily: "monospace",
@@ -122,7 +135,7 @@ export class LobbyScene extends Phaser.Scene {
 
     // Instructions
     this.add
-      .text(cx, 630, "SPACE = KB/M join  |  A = Gamepad join", {
+      .text(cx, 610, "SPACE = KB/M join  |  A = Gamepad join", {
         fontSize: "14px",
         color: "#555555",
         fontFamily: "monospace",
@@ -130,7 +143,15 @@ export class LobbyScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(cx, 660, "BACKSPACE = leave  |  B = Gamepad leave", {
+      .text(cx, 635, "BACKSPACE = leave  |  B = Gamepad leave", {
+        fontSize: "14px",
+        color: "#555555",
+        fontFamily: "monospace",
+      })
+      .setOrigin(0.5);
+
+    this.add
+      .text(cx, 665, "LEFT/RIGHT = mode  |  UP/DOWN = map", {
         fontSize: "14px",
         color: "#555555",
         fontFamily: "monospace",
@@ -157,6 +178,14 @@ export class LobbyScene extends Phaser.Scene {
       if (this.isP1Device("kbm", -1)) this.toggleMode();
     });
 
+    // Map cycle (P1 only): Up/Down arrow
+    this.input.keyboard!.on("keydown-UP", () => {
+      if (this.isP1Device("kbm", -1)) this.cycleMap(-1);
+    });
+    this.input.keyboard!.on("keydown-DOWN", () => {
+      if (this.isP1Device("kbm", -1)) this.cycleMap(1);
+    });
+
     // Start match (P1 only): Enter
     this.input.keyboard!.on("keydown-ENTER", () => {
       if (this.isP1Device("kbm", -1)) this.tryStart();
@@ -179,6 +208,13 @@ export class LobbyScene extends Phaser.Scene {
         else if (button.index === 14 || button.index === 15) {
           if (this.isP1Device("gamepad", gi)) this.toggleMode();
         }
+        // D-pad up (index 12) or D-pad down (index 13) = map cycle (P1 only)
+        else if (button.index === 12) {
+          if (this.isP1Device("gamepad", gi)) this.cycleMap(-1);
+        }
+        else if (button.index === 13) {
+          if (this.isP1Device("gamepad", gi)) this.cycleMap(1);
+        }
         // Start button (index 9) = start match (P1 only)
         else if (button.index === 9) {
           if (this.isP1Device("gamepad", gi)) this.tryStart();
@@ -189,6 +225,10 @@ export class LobbyScene extends Phaser.Scene {
 
   private getModeLabel(): string {
     return this.mode === "coop" ? "MODE: CO-OP" : "MODE: PVP";
+  }
+
+  private getMapLabel(): string {
+    return `MAP: ${MAP_LIST[this.mapIndex].name.toUpperCase()}`;
   }
 
   private getPlayerCount(): number {
@@ -265,6 +305,11 @@ export class LobbyScene extends Phaser.Scene {
     this.modeText.setText(this.getModeLabel());
   }
 
+  private cycleMap(direction: number): void {
+    this.mapIndex = (this.mapIndex + direction + MAP_LIST.length) % MAP_LIST.length;
+    this.mapText.setText(this.getMapLabel());
+  }
+
   private updateStartPrompt(): void {
     this.startPrompt.setVisible(this.getPlayerCount() >= 1);
   }
@@ -279,6 +324,10 @@ export class LobbyScene extends Phaser.Scene {
       if (this.slots[i] !== null) assignments.push(this.slots[i]!);
     }
 
-    this.scene.start("MatchScene", { mode: this.mode, assignments });
+    this.scene.start("MatchScene", {
+      mode: this.mode,
+      assignments,
+      mapId: MAP_LIST[this.mapIndex].id,
+    });
   }
 }

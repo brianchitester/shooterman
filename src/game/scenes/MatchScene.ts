@@ -4,6 +4,7 @@ import { createRng } from "../../core/sim/rng/seedRng";
 import { createEventBus } from "../../core/events/EventBus";
 import { step } from "../../core/sim/tick";
 import { TICKS_PER_SECOND, MAX_PLAYERS } from "../../core/state/Defaults";
+import { getMapDef } from "../../core/defs/maps";
 import type { GameState, Mode, DeviceAssignment } from "../../core/state/Types";
 import type { SeededRng } from "../../core/sim/rng/seedRng";
 import type { EventBus } from "../../core/events/EventBus";
@@ -19,6 +20,7 @@ const MAX_STEPS_PER_FRAME = 5;
 interface LobbyData {
   mode: Mode;
   assignments: DeviceAssignment[];
+  mapId?: string;
 }
 
 export class MatchScene extends Phaser.Scene {
@@ -40,10 +42,11 @@ export class MatchScene extends Phaser.Scene {
   create(data?: LobbyData): void {
     const mode: Mode = data?.mode ?? "coop";
     const assignments: DeviceAssignment[] = data?.assignments ?? [{ type: "kbm", gamepadIndex: -1 }];
+    const mapDef = getMapDef(data?.mapId ?? "arena");
     const playerCount = assignments.length;
     const seed = Date.now();
 
-    this.state = createGameState(mode, playerCount, seed);
+    this.state = createGameState(mode, playerCount, seed, mapDef);
     this.rng = createRng(seed);
     this.eventBus = createEventBus();
     this.inputMgr = new InputManager(this);
