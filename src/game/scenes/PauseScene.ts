@@ -1,45 +1,168 @@
 import Phaser from "phaser";
+import type { Mode, DeviceAssignment } from "../../core/state/Types";
+import { MAP_LIST } from "../../core/defs/maps";
+import { WEAPON_LIST } from "../../core/defs/weapons";
+
+interface PauseData {
+  mode: Mode;
+  mapId: string;
+  weaponId: string;
+  assignments: DeviceAssignment[];
+}
 
 export class PauseScene extends Phaser.Scene {
+  private mode: Mode = "coop";
+  private mapIndex = 0;
+  private weaponIndex = 0;
+  private assignments: DeviceAssignment[] = [];
+
+  private modeText!: Phaser.GameObjects.Text;
+  private mapText!: Phaser.GameObjects.Text;
+  private weaponText!: Phaser.GameObjects.Text;
+
   constructor() {
     super({ key: "PauseScene" });
   }
 
-  create(): void {
+  create(data?: PauseData): void {
     const w = this.scale.width;
     const h = this.scale.height;
     const cx = w / 2;
     const cy = h / 2;
 
+    // Restore current match settings
+    this.mode = data?.mode ?? "coop";
+    this.assignments = data?.assignments ? [...data.assignments] : [];
+    this.mapIndex = Math.max(0, MAP_LIST.findIndex(m => m.id === data?.mapId));
+    this.weaponIndex = Math.max(0, WEAPON_LIST.findIndex(w => w.id === data?.weaponId));
+
     // Semi-transparent backdrop
     this.add.rectangle(cx, cy, w, h, 0x000000, 0.6);
 
+    // Title
     this.add
-      .text(cx, cy - 30, "PAUSED", {
+      .text(cx, cy - 120, "PAUSED", {
         fontSize: "40px",
         color: "#ffffff",
         fontFamily: "monospace",
       })
       .setOrigin(0.5);
 
+    // Mode display
+    this.modeText = this.add
+      .text(cx, cy - 50, this.getModeLabel(), {
+        fontSize: "20px",
+        color: "#f1c40f",
+        fontFamily: "monospace",
+      })
+      .setOrigin(0.5);
+
+    // Map display
+    this.mapText = this.add
+      .text(cx, cy - 20, this.getMapLabel(), {
+        fontSize: "20px",
+        color: "#3498db",
+        fontFamily: "monospace",
+      })
+      .setOrigin(0.5);
+
+    // Weapon display
+    this.weaponText = this.add
+      .text(cx, cy + 10, this.getWeaponLabel(), {
+        fontSize: "20px",
+        color: "#e74c3c",
+        fontFamily: "monospace",
+      })
+      .setOrigin(0.5);
+
+    // Controls hint
     this.add
-      .text(cx, cy + 25, "Click to Resume", {
-        fontSize: "18px",
+      .text(cx, cy + 55, "LEFT/RIGHT = mode  |  UP/DOWN = map  |  W/S = weapon", {
+        fontSize: "12px",
+        color: "#555555",
+        fontFamily: "monospace",
+      })
+      .setOrigin(0.5);
+
+    // Resume
+    this.add
+      .text(cx, cy + 90, "ESC = Resume", {
+        fontSize: "20px",
         color: "#aaaaaa",
         fontFamily: "monospace",
       })
       .setOrigin(0.5);
 
-    const resume = () => {
+    // New game
+    this.add
+      .text(cx, cy + 120, "ENTER = New Game", {
+        fontSize: "20px",
+        color: "#2ecc71",
+        fontFamily: "monospace",
+      })
+      .setOrigin(0.5);
+
+    // --- Input ---
+
+    const kb = this.input.keyboard!;
+
+    // Resume
+    kb.on("keydown-ESC", () => {
+      kb.removeAllListeners();
       this.scene.resume("MatchScene");
       this.scene.stop();
-    };
-
-    this.input.once("pointerdown", resume);
-    this.input.keyboard!.on("keydown-ESC", () => {
-      // Use once-style by removing after first trigger
-      this.input.keyboard!.removeAllListeners("keydown-ESC");
-      resume();
     });
+
+    // New game with current selections
+    kb.on("keydown-ENTER", () => {
+      kb.removeAllListeners();
+      this.scene.stop("MatchScene");
+      this.scene.stop();
+      this.scene.start("MatchScene", {
+        mode: this.mode,
+        assignments: this.assignments,
+        mapId: MAP_LIST[this.mapIndex].id,
+        weaponId: WEAPON_LIST[this.weaponIndex].id,
+      });
+    });
+
+    // Mode toggle
+    kb.on("keydown-LEFT", () => this.toggleMode());
+    kb.on("keydown-RIGHT", () => this.toggleMode());
+
+    // Map cycle
+    kb.on("keydown-UP", () => this.cycleMap(-1));
+    kb.on("keydown-DOWN", () => this.cycleMap(1));
+
+    // Weapon cycle
+    kb.on("keydown-W", () => this.cycleWeapon(-1));
+    kb.on("keydown-S", () => this.cycleWeapon(1));
+  }
+
+  private getModeLabel(): string {
+    return this.mode === "coop" ? "MODE: SURVIVAL" : "MODE: DEATHMATCH";
+  }
+
+  private getMapLabel(): string {
+    return `MAP: ${MAP_LIST[this.mapIndex].name.toUpperCase()}`;
+  }
+
+  private getWeaponLabel(): string {
+    return `WEAPON: ${WEAPON_LIST[this.weaponIndex].name.toUpperCase()}`;
+  }
+
+  private toggleMode(): void {
+    this.mode = this.mode === "coop" ? "pvp_time" : "coop";
+    this.modeText.setText(this.getModeLabel());
+  }
+
+  private cycleMap(direction: number): void {
+    this.mapIndex = (this.mapIndex + direction + MAP_LIST.length) % MAP_LIST.length;
+    this.mapText.setText(this.getMapLabel());
+  }
+
+  private cycleWeapon(direction: number): void {
+    this.weaponIndex = (this.weaponIndex + direction + WEAPON_LIST.length) % WEAPON_LIST.length;
+    this.weaponText.setText(this.getWeaponLabel());
   }
 }

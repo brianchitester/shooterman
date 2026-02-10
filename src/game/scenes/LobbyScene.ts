@@ -252,7 +252,7 @@ export class LobbyScene extends Phaser.Scene {
   }
 
   private getModeLabel(): string {
-    return this.mode === "coop" ? "MODE: CO-OP" : "MODE: PVP";
+    return this.mode === "coop" ? "MODE: SURVIVAL" : "MODE: DEATHMATCH";
   }
 
   private getMapLabel(): string {

@@ -81,7 +81,12 @@ export class MatchScene extends Phaser.Scene {
     // Pause on Escape
     this.input.keyboard!.on("keydown-ESC", () => {
       this.scene.pause();
-      this.scene.launch("PauseScene");
+      this.scene.launch("PauseScene", {
+        mode: this.state.match.mode,
+        mapId: this.state.match.mapId,
+        weaponId: this.matchWeaponId,
+        assignments: this.assignments,
+      });
     });
 
     // Reset accumulator when resuming so paused time doesn't cause catch-up
