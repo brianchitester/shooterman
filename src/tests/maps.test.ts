@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { getMapDef, MAP_ARENA, MAP_REGISTRY } from "../core/defs/maps";
+import { getMapDef, MAP_ARENA, MAP_BUNKER, MAP_LIST, MAP_REGISTRY } from "../core/defs/maps";
 import { createGameState } from "../core/state/GameState";
+import { createRng } from "../core/sim/rng/seedRng";
+import { createEventBus } from "../core/events/EventBus";
+import { step } from "../core/sim/tick";
+import type { PlayerIntent } from "../core/state/Types";
 import { BREAKABLE_TILE_HP } from "../core/state/Defaults";
 
 describe("MapDef registry", () => {
@@ -105,6 +109,109 @@ describe("createGameState with MapDef", () => {
     for (let i = 0; i < 3; i++) {
       expect(state.players[i].pos.x).toBe(MAP_ARENA.spawnPoints[i].x);
       expect(state.players[i].pos.y).toBe(MAP_ARENA.spawnPoints[i].y);
+    }
+  });
+});
+
+describe("MAP_BUNKER", () => {
+  it("has correct dimensions", () => {
+    expect(MAP_BUNKER.cols).toBe(16);
+    expect(MAP_BUNKER.rows).toBe(12);
+    expect(MAP_BUNKER.cellSize).toBe(48);
+  });
+
+  it("has cells array of correct length", () => {
+    expect(MAP_BUNKER.cells.length).toBe(16 * 12);
+  });
+
+  it("has at least 5 spawn points", () => {
+    expect(MAP_BUNKER.spawnPoints.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it("border cells are solid", () => {
+    const { cols, rows, cells } = MAP_BUNKER;
+    // Top row
+    for (let col = 0; col < cols; col++) {
+      expect(cells[col]).toBe("solid");
+    }
+    // Bottom row
+    for (let col = 0; col < cols; col++) {
+      expect(cells[(rows - 1) * cols + col]).toBe("solid");
+    }
+    // Left/right edges
+    for (let row = 0; row < rows; row++) {
+      expect(cells[row * cols]).toBe("solid");
+      expect(cells[row * cols + cols - 1]).toBe("solid");
+    }
+  });
+
+  it("has breakable tiles in interior", () => {
+    let breakableCount = 0;
+    for (let i = 0; i < MAP_BUNKER.cells.length; i++) {
+      if (MAP_BUNKER.cells[i] === "breakable") breakableCount++;
+    }
+    expect(breakableCount).toBeGreaterThan(0);
+  });
+
+  it("getMapDef('bunker') returns MAP_BUNKER", () => {
+    expect(getMapDef("bunker")).toBe(MAP_BUNKER);
+  });
+});
+
+describe("MAP_LIST registry", () => {
+  it("contains at least 2 maps", () => {
+    expect(MAP_LIST.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("all maps have unique ids", () => {
+    const ids = MAP_LIST.map(m => m.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe("createGameState with MAP_BUNKER", () => {
+  it("builds correct TileGrid", () => {
+    const state = createGameState("coop", 2, 42, MAP_BUNKER);
+    expect(state.tiles.width).toBe(16);
+    expect(state.tiles.height).toBe(12);
+    expect(state.tiles.cellSize).toBe(48);
+    expect(state.tiles.cells.length).toBe(192);
+    expect(state.match.mapId).toBe("bunker");
+  });
+
+  it("players spawn at bunker spawn points", () => {
+    const state = createGameState("coop", 3, 42, MAP_BUNKER);
+    for (let i = 0; i < 3; i++) {
+      expect(state.players[i].pos.x).toBe(MAP_BUNKER.spawnPoints[i].x);
+      expect(state.players[i].pos.y).toBe(MAP_BUNKER.spawnPoints[i].y);
+    }
+  });
+
+  it("runs 600 ticks deterministically on bunker", () => {
+    function runSim(seed: number) {
+      const state = createGameState("coop", 2, seed, MAP_BUNKER);
+      const rng = createRng(seed);
+      const events = createEventBus();
+      const intents: PlayerIntent[] = [
+        { move: { x: 1, y: 0 }, aim: { x: 1, y: 0 }, shoot: true, revive: false },
+        { move: { x: -1, y: 0 }, aim: { x: -1, y: 0 }, shoot: true, revive: false },
+      ];
+      for (let t = 0; t < 600; t++) {
+        step(state, intents, rng, events);
+        events.drain();
+      }
+      return state;
+    }
+
+    const a = runSim(99);
+    const b = runSim(99);
+
+    expect(a.match.tick).toBe(b.match.tick);
+    expect(a.match.score).toBe(b.match.score);
+    for (let i = 0; i < a.players.length; i++) {
+      expect(a.players[i].pos.x).toBe(b.players[i].pos.x);
+      expect(a.players[i].pos.y).toBe(b.players[i].pos.y);
+      expect(a.players[i].hp).toBe(b.players[i].hp);
     }
   });
 });
