@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { createGameState, cloneState } from "../core/state/GameState";
-import { MAX_BULLETS, MAX_ENEMIES, TILE_COLS, TILE_ROWS, PLAYER_HP, SHARED_LIVES_BASE } from "../core/state/Defaults";
+import { MAX_BULLETS, MAX_ENEMIES, PLAYER_HP, SHARED_LIVES_BASE } from "../core/state/Defaults";
+import { MAP_ARENA } from "../core/defs/maps";
 
 describe("createGameState", () => {
   it("creates correct number of players", () => {
@@ -26,9 +27,9 @@ describe("createGameState", () => {
 
   it("creates tile grid with correct dimensions", () => {
     const state = createGameState("coop", 1, 42);
-    expect(state.tiles.width).toBe(TILE_COLS);
-    expect(state.tiles.height).toBe(TILE_ROWS);
-    expect(state.tiles.cells.length).toBe(TILE_COLS * TILE_ROWS);
+    expect(state.tiles.width).toBe(MAP_ARENA.cols);
+    expect(state.tiles.height).toBe(MAP_ARENA.rows);
+    expect(state.tiles.cells.length).toBe(MAP_ARENA.cols * MAP_ARENA.rows);
   });
 
   it("sets default player values", () => {
@@ -71,7 +72,7 @@ describe("createGameState", () => {
     // Top-left corner
     expect(state.tiles.cells[0].type).toBe("solid");
     // Bottom-right corner
-    expect(state.tiles.cells[TILE_ROWS * TILE_COLS - 1].type).toBe("solid");
+    expect(state.tiles.cells[MAP_ARENA.rows * MAP_ARENA.cols - 1].type).toBe("solid");
   });
 });
 

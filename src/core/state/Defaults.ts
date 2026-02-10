@@ -1,10 +1,11 @@
-// Arena layout
+// Timing
 export const TICKS_PER_SECOND = 60;
+
+// Viewport (canvas size — maps may be equal or smaller)
 export const ARENA_WIDTH = 960;
 export const ARENA_HEIGHT = 720;
-export const TILE_COLS = 20;
-export const TILE_ROWS = 15;
-export const CELL_SIZE = 48;
+
+// Map layout constants now in src/core/defs/maps.ts (MapDef)
 
 // Pool sizes
 export const MAX_PLAYERS = 7;
@@ -71,13 +72,3 @@ export const SPAWN_RAMP_DURATION = 3600; // ticks (60s) over which spawn rate ra
 export const ENEMY_CAP_BASE = 5;
 export const ENEMY_CAP_PER_PLAYER = 3;
 
-// Spawn points (7 pre-defined positions along arena edges)
-export const SPAWN_POINTS: ReadonlyArray<{ x: number; y: number }> = [
-  { x: 96, y: 48 },    // top-left
-  { x: 480, y: 48 },   // top-center
-  { x: 864, y: 48 },   // top-right
-  { x: 48, y: 360 },   // mid-left
-  { x: 912, y: 360 },  // mid-right
-  { x: 192, y: 672 },  // bottom-left
-  { x: 768, y: 672 },  // bottom-right
-];

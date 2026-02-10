@@ -7,8 +7,9 @@ import type { PlayerIntent, GameState } from "../core/state/Types";
 import {
   SHOOTER_HP, SHOOTER_FIRE_COOLDOWN, SHOOTER_SPAWN_INTERVAL,
   SHOOTER_BULLET_DAMAGE, SHOOTER_KNOCKBACK, SHOOTER_SCORE, ENEMY_HP, PLAYER_HP,
-  BREAKABLE_TILE_HP, CELL_SIZE, TILE_COLS,
+  BREAKABLE_TILE_HP,
 } from "../core/state/Defaults";
+import { MAP_ARENA } from "../core/defs/maps";
 
 function emptyIntents(count: number): PlayerIntent[] {
   const intents: PlayerIntent[] = [];
@@ -207,10 +208,12 @@ describe("shooter enemy type", () => {
     }
     expect(breakableIdx).not.toBe(-1);
 
-    const col = breakableIdx % TILE_COLS;
-    const row = (breakableIdx / TILE_COLS) | 0;
-    const tileX = col * CELL_SIZE + CELL_SIZE / 2;
-    const tileY = row * CELL_SIZE + CELL_SIZE / 2;
+    const cols = MAP_ARENA.cols;
+    const cs = MAP_ARENA.cellSize;
+    const col = breakableIdx % cols;
+    const row = (breakableIdx / cols) | 0;
+    const tileX = col * cs + cs / 2;
+    const tileY = row * cs + cs / 2;
 
     // Set tile to 1 HP so one hit destroys it
     state.tiles.cells[breakableIdx].hp = 1;
