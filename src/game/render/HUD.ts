@@ -18,10 +18,11 @@ export class HUD {
   private pvpScoreTexts: Phaser.GameObjects.Text[] = [];
 
   create(scene: Phaser.Scene): void {
-    this.livesText = scene.add.text(8, 4, "", TEXT_STYLE).setDepth(HUD_DEPTH);
+    this.livesText = scene.add.text(8, 4, "", TEXT_STYLE).setDepth(HUD_DEPTH).setScrollFactor(0);
     this.scoreText = scene.add.text(ARENA_WIDTH - 8, 4, "", TEXT_STYLE)
       .setOrigin(1, 0)
-      .setDepth(HUD_DEPTH);
+      .setDepth(HUD_DEPTH)
+      .setScrollFactor(0);
 
     this.revivePrompt = scene.add.text(0, 0, "[E] Revive", {
       fontSize: "12px",
@@ -40,6 +41,7 @@ export class HUD {
     })
       .setOrigin(0.5, 0)
       .setDepth(HUD_DEPTH)
+      .setScrollFactor(0)
       .setVisible(false);
 
     // PVP scoreboard — 7 pre-allocated slots, top-left
@@ -51,6 +53,7 @@ export class HUD {
         fontFamily: "monospace",
       })
         .setDepth(HUD_DEPTH)
+        .setScrollFactor(0)
         .setVisible(false);
       this.pvpScoreTexts.push(t);
     }

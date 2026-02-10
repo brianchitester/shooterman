@@ -3,7 +3,7 @@ import { createGameState, addPlayerToState } from "../../core/state/GameState";
 import { createRng } from "../../core/sim/rng/seedRng";
 import { createEventBus } from "../../core/events/EventBus";
 import { step } from "../../core/sim/tick";
-import { TICKS_PER_SECOND, MAX_PLAYERS } from "../../core/state/Defaults";
+import { TICKS_PER_SECOND, MAX_PLAYERS, ARENA_WIDTH, ARENA_HEIGHT } from "../../core/state/Defaults";
 import { getMapDef } from "../../core/defs/maps";
 import type { GameState, Mode, DeviceAssignment } from "../../core/state/Types";
 import type { SeededRng } from "../../core/sim/rng/seedRng";
@@ -60,6 +60,14 @@ export class MatchScene extends Phaser.Scene {
     snapshotPositions(this.state, this.prev);
 
     this.gameOverLaunched = false;
+
+    // Center map in viewport (smaller maps get equal margins)
+    const mapW = this.state.tiles.width * this.state.tiles.cellSize;
+    const mapH = this.state.tiles.height * this.state.tiles.cellSize;
+    const offsetX = (ARENA_WIDTH - mapW) / 2;
+    const offsetY = (ARENA_HEIGHT - mapH) / 2;
+    this.cameras.main.setScroll(-offsetX, -offsetY);
+
     this.renderWorld.create(this, this.state);
     this.hud.create(this);
 

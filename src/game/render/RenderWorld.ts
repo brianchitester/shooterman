@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import type { GameState } from "../../core/state/Types";
-import { MAX_BULLETS, MAX_ENEMIES, MAX_PLAYERS } from "../../core/state/Defaults";
+import { MAX_BULLETS, MAX_ENEMIES, MAX_PLAYERS, ARENA_WIDTH, ARENA_HEIGHT } from "../../core/state/Defaults";
 import type { PrevPositions } from "./PrevPositions";
 import {
   createPlayerGraphic,
@@ -25,6 +25,13 @@ export class RenderWorld {
   private tileGfx!: Phaser.GameObjects.Graphics;
 
   create(scene: Phaser.Scene, state: GameState): void {
+    // Viewport fill — covers margins for maps smaller than the canvas
+    const vpBg = scene.add.graphics();
+    vpBg.fillStyle(0x0e0e1a, 1);
+    vpBg.fillRect(0, 0, ARENA_WIDTH, ARENA_HEIGHT);
+    vpBg.setDepth(-1);
+    vpBg.setScrollFactor(0);
+
     // Background — sized to map
     const mapW = state.tiles.width * state.tiles.cellSize;
     const mapH = state.tiles.height * state.tiles.cellSize;
