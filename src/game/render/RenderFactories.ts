@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 import type { TileGrid, EnemyType } from "../../core/state/Types";
-import { CELL_SIZE } from "../../core/state/Defaults";
 
 export const PLAYER_COLORS: readonly number[] = [
   0xe74c3c, // Red
@@ -100,23 +99,24 @@ export function createTileGraphics(scene: Phaser.Scene): Phaser.GameObjects.Grap
 
 export function drawTiles(g: Phaser.GameObjects.Graphics, tiles: TileGrid): void {
   g.clear();
+  const cs = tiles.cellSize;
   for (let row = 0; row < tiles.height; row++) {
     for (let col = 0; col < tiles.width; col++) {
       const cell = tiles.cells[row * tiles.width + col];
       if (cell.type === "solid") {
         g.fillStyle(TILE_SOLID_COLOR, 1);
-        g.fillRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        g.fillRect(col * cs, row * cs, cs, cs);
       } else if (cell.type === "breakable") {
         const color = cell.hp < 2 ? TILE_BREAKABLE_DAMAGED_COLOR : TILE_BREAKABLE_COLOR;
         g.fillStyle(color, 1);
-        g.fillRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        g.fillRect(col * cs, row * cs, cs, cs);
         // Crack lines on damaged tiles
         if (cell.hp < 2) {
           g.lineStyle(1, 0x3a2f0a, 0.6);
-          const x = col * CELL_SIZE;
-          const y = row * CELL_SIZE;
-          g.lineBetween(x + 8, y + 4, x + CELL_SIZE - 12, y + CELL_SIZE - 8);
-          g.lineBetween(x + CELL_SIZE - 10, y + 10, x + 6, y + CELL_SIZE - 6);
+          const x = col * cs;
+          const y = row * cs;
+          g.lineBetween(x + 8, y + 4, x + cs - 12, y + cs - 8);
+          g.lineBetween(x + cs - 10, y + 10, x + 6, y + cs - 6);
         }
       }
     }

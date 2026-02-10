@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import type { GameState } from "../../core/state/Types";
-import { ARENA_WIDTH, ARENA_HEIGHT, MAX_BULLETS, MAX_ENEMIES, MAX_PLAYERS } from "../../core/state/Defaults";
+import { MAX_BULLETS, MAX_ENEMIES, MAX_PLAYERS } from "../../core/state/Defaults";
 import type { PrevPositions } from "./PrevPositions";
 import {
   createPlayerGraphic,
@@ -25,10 +25,12 @@ export class RenderWorld {
   private tileGfx!: Phaser.GameObjects.Graphics;
 
   create(scene: Phaser.Scene, state: GameState): void {
-    // Background
+    // Background — sized to map
+    const mapW = state.tiles.width * state.tiles.cellSize;
+    const mapH = state.tiles.height * state.tiles.cellSize;
     const bg = scene.add.graphics();
     bg.fillStyle(0x1a1a2e, 1);
-    bg.fillRect(0, 0, ARENA_WIDTH, ARENA_HEIGHT);
+    bg.fillRect(0, 0, mapW, mapH);
     bg.setDepth(0);
 
     // Tile grid
