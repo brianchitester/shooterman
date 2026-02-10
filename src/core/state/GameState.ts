@@ -45,6 +45,8 @@ function createBulletSlot(): BulletState {
     active: false,
     fromEnemy: false,
     weaponId: "auto",
+    pierceRemaining: 0,
+    lastPierceId: 0,
   };
 }
 

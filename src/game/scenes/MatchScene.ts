@@ -21,6 +21,7 @@ interface LobbyData {
   mode: Mode;
   assignments: DeviceAssignment[];
   mapId?: string;
+  weaponId?: string;
 }
 
 export class MatchScene extends Phaser.Scene {
@@ -32,6 +33,7 @@ export class MatchScene extends Phaser.Scene {
   private hud!: HUD;
   private prev!: PrevPositions;
   private assignments: DeviceAssignment[] = [];
+  private matchWeaponId = "auto";
   private accumulator = 0;
   private gameOverLaunched = false;
 
@@ -47,6 +49,11 @@ export class MatchScene extends Phaser.Scene {
     const seed = Date.now();
 
     this.state = createGameState(mode, playerCount, seed, mapDef);
+    // Set starting weapon for all players
+    this.matchWeaponId = data?.weaponId ?? "auto";
+    for (let i = 0; i < this.state.players.length; i++) {
+      this.state.players[i].weaponId = this.matchWeaponId;
+    }
     this.rng = createRng(seed);
     this.eventBus = createEventBus();
     this.inputMgr = new InputManager(this);
@@ -141,6 +148,7 @@ export class MatchScene extends Phaser.Scene {
     if (!newAssignment) return;
 
     const player = addPlayerToState(this.state);
+    player.weaponId = this.matchWeaponId;
     this.assignments.push(newAssignment);
     this.inputMgr.setAssignments(this.assignments);
 

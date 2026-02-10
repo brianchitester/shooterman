@@ -3,6 +3,7 @@ import type { Mode, DeviceAssignment } from "../../core/state/Types";
 import { MAX_PLAYERS } from "../../core/state/Defaults";
 import { PLAYER_COLORS } from "../render/RenderFactories";
 import { MAP_LIST } from "../../core/defs/maps";
+import { WEAPON_LIST } from "../../core/defs/weapons";
 
 const SLOT_RADIUS = 24;
 const TEXT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
@@ -15,6 +16,7 @@ export class LobbyScene extends Phaser.Scene {
   private slots: (DeviceAssignment | null)[] = [];
   private mode: Mode = "coop";
   private mapIndex = 0;
+  private weaponIndex = 0;
 
   // Display objects per slot
   private slotCircles: Phaser.GameObjects.Graphics[] = [];
@@ -23,6 +25,7 @@ export class LobbyScene extends Phaser.Scene {
 
   private modeText!: Phaser.GameObjects.Text;
   private mapText!: Phaser.GameObjects.Text;
+  private weaponText!: Phaser.GameObjects.Text;
   private startPrompt!: Phaser.GameObjects.Text;
 
   constructor() {
@@ -36,6 +39,7 @@ export class LobbyScene extends Phaser.Scene {
     }
     this.mode = "coop";
     this.mapIndex = 0;
+    this.weaponIndex = 0;
     this.slotCircles = [];
     this.slotLabels = [];
     this.slotPrompts = [];
@@ -116,16 +120,25 @@ export class LobbyScene extends Phaser.Scene {
 
     // Map display
     this.mapText = this.add
-      .text(cx, 470, this.getMapLabel(), {
+      .text(cx, 465, this.getMapLabel(), {
         fontSize: "20px",
         color: "#3498db",
         fontFamily: "monospace",
       })
       .setOrigin(0.5);
 
+    // Weapon display
+    this.weaponText = this.add
+      .text(cx, 500, this.getWeaponLabel(), {
+        fontSize: "20px",
+        color: "#e74c3c",
+        fontFamily: "monospace",
+      })
+      .setOrigin(0.5);
+
     // Start prompt
     this.startPrompt = this.add
-      .text(cx, 540, "P1 press ENTER / START", {
+      .text(cx, 550, "P1 press ENTER / START", {
         fontSize: "20px",
         color: "#aaaaaa",
         fontFamily: "monospace",
@@ -151,7 +164,7 @@ export class LobbyScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(cx, 665, "LEFT/RIGHT = mode  |  UP/DOWN = map", {
+      .text(cx, 660, "LEFT/RIGHT = mode  |  UP/DOWN = map  |  W/S = weapon", {
         fontSize: "14px",
         color: "#555555",
         fontFamily: "monospace",
@@ -186,6 +199,14 @@ export class LobbyScene extends Phaser.Scene {
       if (this.isP1Device("kbm", -1)) this.cycleMap(1);
     });
 
+    // Weapon cycle (P1 only): W/S
+    this.input.keyboard!.on("keydown-W", () => {
+      if (this.isP1Device("kbm", -1)) this.cycleWeapon(-1);
+    });
+    this.input.keyboard!.on("keydown-S", () => {
+      if (this.isP1Device("kbm", -1)) this.cycleWeapon(1);
+    });
+
     // Start match (P1 only): Enter
     this.input.keyboard!.on("keydown-ENTER", () => {
       if (this.isP1Device("kbm", -1)) this.tryStart();
@@ -215,6 +236,13 @@ export class LobbyScene extends Phaser.Scene {
         else if (button.index === 13) {
           if (this.isP1Device("gamepad", gi)) this.cycleMap(1);
         }
+        // L bumper (index 4) / R bumper (index 5) = weapon cycle (P1 only)
+        else if (button.index === 4) {
+          if (this.isP1Device("gamepad", gi)) this.cycleWeapon(-1);
+        }
+        else if (button.index === 5) {
+          if (this.isP1Device("gamepad", gi)) this.cycleWeapon(1);
+        }
         // Start button (index 9) = start match (P1 only)
         else if (button.index === 9) {
           if (this.isP1Device("gamepad", gi)) this.tryStart();
@@ -229,6 +257,10 @@ export class LobbyScene extends Phaser.Scene {
 
   private getMapLabel(): string {
     return `MAP: ${MAP_LIST[this.mapIndex].name.toUpperCase()}`;
+  }
+
+  private getWeaponLabel(): string {
+    return `WEAPON: ${WEAPON_LIST[this.weaponIndex].name.toUpperCase()}`;
   }
 
   private getPlayerCount(): number {
@@ -310,6 +342,11 @@ export class LobbyScene extends Phaser.Scene {
     this.mapText.setText(this.getMapLabel());
   }
 
+  private cycleWeapon(direction: number): void {
+    this.weaponIndex = (this.weaponIndex + direction + WEAPON_LIST.length) % WEAPON_LIST.length;
+    this.weaponText.setText(this.getWeaponLabel());
+  }
+
   private updateStartPrompt(): void {
     this.startPrompt.setVisible(this.getPlayerCount() >= 1);
   }
@@ -328,6 +365,7 @@ export class LobbyScene extends Phaser.Scene {
       mode: this.mode,
       assignments,
       mapId: MAP_LIST[this.mapIndex].id,
+      weaponId: WEAPON_LIST[this.weaponIndex].id,
     });
   }
 }

@@ -11,6 +11,7 @@ export function spawnBullet(
   damage: number,
   fromEnemy: boolean,
   weaponId: string,
+  pierceCount: number = 0,
 ): BulletState | null {
   // Find inactive bullet slot
   let slot = -1;
@@ -34,6 +35,8 @@ export function spawnBullet(
   bullet.active = true;
   bullet.fromEnemy = fromEnemy;
   bullet.weaponId = weaponId;
+  bullet.pierceRemaining = pierceCount;
+  bullet.lastPierceId = 0;
 
   return bullet;
 }

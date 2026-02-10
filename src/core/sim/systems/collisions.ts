@@ -22,6 +22,8 @@ export function collisionSystem(state: GameState, events: EventBus): void {
         if (consumed) break;
         const enemy = state.enemies[e];
         if (!enemy.active || enemy.spawnTimer > 0) continue;
+        // Pierce: skip entity we just pierced through
+        if (enemy.id === bullet.lastPierceId) continue;
 
         const hitDist = BULLET_RADIUS + ENEMY_RADIUS;
         if (distSq(bullet.pos.x, bullet.pos.y, enemy.pos.x, enemy.pos.y) < hitDist * hitDist) {
@@ -63,8 +65,14 @@ export function collisionSystem(state: GameState, events: EventBus): void {
             }
           }
 
-          bullet.active = false;
-          consumed = true;
+          // Pierce: continue through if charges remain
+          if (bullet.pierceRemaining > 0) {
+            bullet.pierceRemaining--;
+            bullet.lastPierceId = enemy.id;
+          } else {
+            bullet.active = false;
+            consumed = true;
+          }
         }
       }
     }
@@ -75,6 +83,8 @@ export function collisionSystem(state: GameState, events: EventBus): void {
       if (consumed) break;
       const player = state.players[p];
       if (!player.alive) continue;
+      // Pierce: skip entity we just pierced through
+      if (player.id === bullet.lastPierceId) continue;
 
       if (bullet.fromEnemy) {
         // Enemy bullets always hit players (skip self-damage and friendly-fire checks)
@@ -136,8 +146,14 @@ export function collisionSystem(state: GameState, events: EventBus): void {
           }
         }
 
-        bullet.active = false;
-        consumed = true;
+        // Pierce: continue through if charges remain
+        if (bullet.pierceRemaining > 0) {
+          bullet.pierceRemaining--;
+          bullet.lastPierceId = player.id;
+        } else {
+          bullet.active = false;
+          consumed = true;
+        }
       }
     }
     if (consumed) continue;

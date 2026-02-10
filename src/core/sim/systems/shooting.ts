@@ -48,7 +48,7 @@ export function shootingSystem(
           state, player.id, player.pos,
           aimX, aimY,
           wep.bulletSpeed, wep.bulletTTL, wep.bulletDamage,
-          false, player.weaponId,
+          false, player.weaponId, wep.pierceCount,
         );
         if (bullet === null) break; // Pool exhausted
 

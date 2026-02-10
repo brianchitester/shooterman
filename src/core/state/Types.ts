@@ -47,6 +47,8 @@ export interface BulletState {
   active: boolean;
   fromEnemy: boolean;
   weaponId: string;
+  pierceRemaining: number; // entities left to pass through (0 = normal)
+  lastPierceId: EntityId;  // skip re-hitting this entity after pierce
 }
 
 export interface EnemyState {
