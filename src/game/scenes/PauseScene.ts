@@ -106,16 +106,16 @@ export class PauseScene extends Phaser.Scene {
 
     const kb = this.input.keyboard!;
 
-    // Resume
-    kb.on("keydown-ESC", () => {
+    const resume = () => {
       kb.removeAllListeners();
+      if (this.input.gamepad) this.input.gamepad.removeAllListeners();
       this.scene.resume("MatchScene");
       this.scene.stop();
-    });
+    };
 
-    // New game with current selections
-    kb.on("keydown-ENTER", () => {
+    const newGame = () => {
       kb.removeAllListeners();
+      if (this.input.gamepad) this.input.gamepad.removeAllListeners();
       this.scene.stop("MatchScene");
       this.scene.stop();
       this.scene.start("MatchScene", {
@@ -124,19 +124,32 @@ export class PauseScene extends Phaser.Scene {
         mapId: MAP_LIST[this.mapIndex].id,
         weaponId: WEAPON_LIST[this.weaponIndex].id,
       });
-    });
+    };
 
-    // Mode toggle
+    // Keyboard
+    kb.on("keydown-ESC", resume);
+    kb.on("keydown-ENTER", newGame);
     kb.on("keydown-LEFT", () => this.toggleMode());
     kb.on("keydown-RIGHT", () => this.toggleMode());
-
-    // Map cycle
     kb.on("keydown-UP", () => this.cycleMap(-1));
     kb.on("keydown-DOWN", () => this.cycleMap(1));
-
-    // Weapon cycle
     kb.on("keydown-W", () => this.cycleWeapon(-1));
     kb.on("keydown-S", () => this.cycleWeapon(1));
+
+    // Gamepad
+    if (this.input.gamepad) {
+      this.input.gamepad.on("down", (_pad: Phaser.Input.Gamepad.Gamepad, button: Phaser.Input.Gamepad.Button) => {
+        switch (button.index) {
+          case 9: resume(); break;              // Start = resume
+          case 0: newGame(); break;             // A = new game
+          case 14: case 15: this.toggleMode(); break;  // D-pad left/right = mode
+          case 12: this.cycleMap(-1); break;    // D-pad up = map prev
+          case 13: this.cycleMap(1); break;     // D-pad down = map next
+          case 4: this.cycleWeapon(-1); break;  // L bumper = weapon prev
+          case 5: this.cycleWeapon(1); break;   // R bumper = weapon next
+        }
+      });
+    }
   }
 
   private getModeLabel(): string {

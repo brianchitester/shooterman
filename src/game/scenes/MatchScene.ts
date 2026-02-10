@@ -78,8 +78,8 @@ export class MatchScene extends Phaser.Scene {
     this.renderWorld.create(this, this.state);
     this.hud.create(this);
 
-    // Pause on Escape
-    this.input.keyboard!.on("keydown-ESC", () => {
+    // Pause on Escape or gamepad Start
+    const launchPause = () => {
       this.scene.pause();
       this.scene.launch("PauseScene", {
         mode: this.state.match.mode,
@@ -87,7 +87,13 @@ export class MatchScene extends Phaser.Scene {
         weaponId: this.matchWeaponId,
         assignments: this.assignments,
       });
-    });
+    };
+    this.input.keyboard!.on("keydown-ESC", launchPause);
+    if (this.input.gamepad) {
+      this.input.gamepad.on("down", (_pad: Phaser.Input.Gamepad.Gamepad, button: Phaser.Input.Gamepad.Button) => {
+        if (button.index === 9) launchPause(); // Start button
+      });
+    }
 
     // Reset accumulator when resuming so paused time doesn't cause catch-up
     this.events.on("resume", () => {
