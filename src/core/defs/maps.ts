@@ -259,11 +259,79 @@ export const MAP_LABYRINTH: MapDef = {
 };
 
 // ---------------------------------------------------------------------------
+// MAP: Fortress (80x60) — cellSize 12, dense breakable fill
+// ---------------------------------------------------------------------------
+
+function generateFortressCells(): TileType[] {
+  const cols = 80;
+  const rows = 60;
+  const cells: TileType[] = [];
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      // Border walls
+      if (row === 0 || row === rows - 1 || col === 0 || col === cols - 1) {
+        cells.push("solid");
+        continue;
+      }
+
+      // 4-wide corridors: horizontal at rows 14-17, 29-32, 44-47
+      const inHCorridor =
+        (row >= 14 && row <= 17) ||
+        (row >= 29 && row <= 32) ||
+        (row >= 44 && row <= 47);
+
+      // 4-wide corridors: vertical at cols 19-22, 39-42, 59-62
+      const inVCorridor =
+        (col >= 19 && col <= 22) ||
+        (col >= 39 && col <= 42) ||
+        (col >= 59 && col <= 62);
+
+      if (inHCorridor || inVCorridor) {
+        // Corridors are always open — override everything
+        cells.push("empty");
+      }
+      // Solid 2x2 pillars on a 12-cell grid (permanent landmarks)
+      else if (
+        row % 12 < 2 && col % 12 < 2 &&
+        row >= 2 && row <= rows - 3 && col >= 2 && col <= cols - 3
+      ) {
+        cells.push("solid");
+      }
+      // Everything else: breakable
+      else {
+        cells.push("breakable");
+      }
+    }
+  }
+
+  return cells;
+}
+
+export const MAP_FORTRESS: MapDef = {
+  id: "fortress",
+  name: "Fortress",
+  cols: 80,
+  rows: 60,
+  cellSize: 12,
+  spawnPoints: [
+    { x: 246, y: 186 },   // (20,15) top-left intersection
+    { x: 726, y: 186 },   // (60,15) top-right intersection
+    { x: 486, y: 366 },   // (40,30) dead center
+    { x: 246, y: 546 },   // (20,45) bottom-left intersection
+    { x: 726, y: 546 },   // (60,45) bottom-right intersection
+    { x: 54, y: 366 },    // (4,30) far left corridor
+    { x: 918, y: 366 },   // (76,30) far right corridor
+  ],
+  cells: generateFortressCells(),
+};
+
+// ---------------------------------------------------------------------------
 // Registry
 // ---------------------------------------------------------------------------
 
 export const MAP_LIST: ReadonlyArray<MapDef> = [
-  MAP_ARENA, MAP_BUNKER, MAP_CRUCIBLE, MAP_GRIDLOCK, MAP_LABYRINTH,
+  MAP_ARENA, MAP_BUNKER, MAP_CRUCIBLE, MAP_GRIDLOCK, MAP_LABYRINTH, MAP_FORTRESS,
 ];
 
 export const MAP_REGISTRY: Record<string, MapDef> = {};

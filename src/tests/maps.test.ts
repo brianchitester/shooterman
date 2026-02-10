@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   getMapDef, MAP_ARENA, MAP_BUNKER, MAP_CRUCIBLE, MAP_GRIDLOCK, MAP_LABYRINTH,
-  MAP_LIST, MAP_REGISTRY,
+  MAP_FORTRESS, MAP_LIST, MAP_REGISTRY,
 } from "../core/defs/maps";
 import type { MapDef } from "../core/defs/MapDef";
 import { createGameState } from "../core/state/GameState";
@@ -163,8 +163,8 @@ describe("MAP_BUNKER", () => {
 });
 
 describe("MAP_LIST registry", () => {
-  it("contains all 5 maps", () => {
-    expect(MAP_LIST.length).toBe(5);
+  it("contains all 6 maps", () => {
+    expect(MAP_LIST.length).toBe(6);
   });
 
   it("all maps have unique ids", () => {
@@ -312,3 +312,4 @@ function validateMapDef(map: MapDef) {
 validateMapDef(MAP_CRUCIBLE);
 validateMapDef(MAP_GRIDLOCK);
 validateMapDef(MAP_LABYRINTH);
+validateMapDef(MAP_FORTRESS);
