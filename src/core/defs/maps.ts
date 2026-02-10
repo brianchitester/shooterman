@@ -1,6 +1,27 @@
 import type { MapDef } from "./MapDef";
 import type { TileType } from "../state/Types";
 
+/**
+ * Parse a visual ASCII layout into a TileType array.
+ * '#' = solid, 'X' = breakable, '.' = empty
+ * Whitespace between rows is ignored; each row must have exactly `cols` chars.
+ */
+export function parseLayout(layout: string, cols: number): TileType[] {
+  const cells: TileType[] = [];
+  for (let i = 0; i < layout.length; i++) {
+    const ch = layout[i];
+    if (ch === "#") cells.push("solid");
+    else if (ch === "X") cells.push("breakable");
+    else if (ch === ".") cells.push("empty");
+    // skip whitespace / newlines
+  }
+  return cells;
+}
+
+// ---------------------------------------------------------------------------
+// MAP: Arena (20x15) — the original
+// ---------------------------------------------------------------------------
+
 /** Reproduce the current procedural arena layout as static data. */
 function generateArenaCells(): TileType[] {
   const cols = 20;
@@ -48,9 +69,49 @@ export const MAP_ARENA: MapDef = {
   cells: generateArenaCells(),
 };
 
-export const MAP_REGISTRY: Record<string, MapDef> = {
-  [MAP_ARENA.id]: MAP_ARENA,
+// ---------------------------------------------------------------------------
+// MAP: Bunker (16x12) — compact, corridors + rooms
+// ---------------------------------------------------------------------------
+
+export const MAP_BUNKER: MapDef = {
+  id: "bunker",
+  name: "Bunker",
+  cols: 16,
+  rows: 12,
+  cellSize: 48,
+  spawnPoints: [
+    { x: 384, y: 72 },   // top-center
+    { x: 72, y: 288 },   // mid-left
+    { x: 696, y: 288 },  // mid-right
+    { x: 168, y: 504 },  // bottom-left
+    { x: 600, y: 504 },  // bottom-right
+  ],
+  cells: parseLayout([
+    "################",
+    "#..............#",
+    "#.##.XX..XX.##.#",
+    "#..............#",
+    "#.XX.##..##.XX.#",
+    "#......XX......#",
+    "#......XX......#",
+    "#.XX.##..##.XX.#",
+    "#..............#",
+    "#.##.XX..XX.##.#",
+    "#..............#",
+    "################",
+  ].join(""), 16),
 };
+
+// ---------------------------------------------------------------------------
+// Registry
+// ---------------------------------------------------------------------------
+
+export const MAP_LIST: ReadonlyArray<MapDef> = [MAP_ARENA, MAP_BUNKER];
+
+export const MAP_REGISTRY: Record<string, MapDef> = {};
+for (const m of MAP_LIST) {
+  MAP_REGISTRY[m.id] = m;
+}
 
 export function getMapDef(id: string): MapDef {
   return MAP_REGISTRY[id] ?? MAP_ARENA;
