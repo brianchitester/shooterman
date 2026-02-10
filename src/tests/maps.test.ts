@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { getMapDef, MAP_ARENA, MAP_BUNKER, MAP_LIST, MAP_REGISTRY } from "../core/defs/maps";
+import {
+  getMapDef, MAP_ARENA, MAP_BUNKER, MAP_CRUCIBLE, MAP_GRIDLOCK, MAP_LABYRINTH,
+  MAP_LIST, MAP_REGISTRY,
+} from "../core/defs/maps";
+import type { MapDef } from "../core/defs/MapDef";
 import { createGameState } from "../core/state/GameState";
 import { createRng } from "../core/sim/rng/seedRng";
 import { createEventBus } from "../core/events/EventBus";
@@ -159,8 +163,8 @@ describe("MAP_BUNKER", () => {
 });
 
 describe("MAP_LIST registry", () => {
-  it("contains at least 2 maps", () => {
-    expect(MAP_LIST.length).toBeGreaterThanOrEqual(2);
+  it("contains all 5 maps", () => {
+    expect(MAP_LIST.length).toBe(5);
   });
 
   it("all maps have unique ids", () => {
@@ -215,3 +219,96 @@ describe("createGameState with MAP_BUNKER", () => {
     }
   });
 });
+
+// --- Generic validation helper for new maps ---
+
+function validateMapDef(map: MapDef) {
+  describe(`${map.name} (${map.cols}x${map.rows}, cellSize ${map.cellSize})`, () => {
+    it("has correct cell count", () => {
+      expect(map.cells.length).toBe(map.cols * map.rows);
+    });
+
+    it("fits within 960x720 viewport", () => {
+      expect(map.cols * map.cellSize).toBeLessThanOrEqual(960);
+      expect(map.rows * map.cellSize).toBeLessThanOrEqual(720);
+    });
+
+    it("has at least 5 spawn points", () => {
+      expect(map.spawnPoints.length).toBeGreaterThanOrEqual(5);
+    });
+
+    it("border cells are solid", () => {
+      const { cols, rows, cells } = map;
+      for (let col = 0; col < cols; col++) {
+        expect(cells[col]).toBe("solid");
+        expect(cells[(rows - 1) * cols + col]).toBe("solid");
+      }
+      for (let row = 0; row < rows; row++) {
+        expect(cells[row * cols]).toBe("solid");
+        expect(cells[row * cols + cols - 1]).toBe("solid");
+      }
+    });
+
+    it("has breakable tiles", () => {
+      let count = 0;
+      for (let i = 0; i < map.cells.length; i++) {
+        if (map.cells[i] === "breakable") count++;
+      }
+      expect(count).toBeGreaterThan(0);
+    });
+
+    it("spawn points are on empty tiles", () => {
+      for (const sp of map.spawnPoints) {
+        const col = Math.floor(sp.x / map.cellSize);
+        const row = Math.floor(sp.y / map.cellSize);
+        const idx = row * map.cols + col;
+        expect(map.cells[idx]).toBe("empty");
+      }
+    });
+
+    it("spawn points are within map bounds", () => {
+      const maxX = map.cols * map.cellSize;
+      const maxY = map.rows * map.cellSize;
+      for (const sp of map.spawnPoints) {
+        expect(sp.x).toBeGreaterThan(0);
+        expect(sp.x).toBeLessThan(maxX);
+        expect(sp.y).toBeGreaterThan(0);
+        expect(sp.y).toBeLessThan(maxY);
+      }
+    });
+
+    it("registry lookup works", () => {
+      expect(getMapDef(map.id)).toBe(map);
+    });
+
+    it("runs 600 ticks deterministically", () => {
+      function runSim(seed: number) {
+        const state = createGameState("coop", 2, seed, map);
+        const rng = createRng(seed);
+        const events = createEventBus();
+        const intents: PlayerIntent[] = [
+          { move: { x: 1, y: 0 }, aim: { x: 1, y: 0 }, shoot: true, revive: false },
+          { move: { x: -1, y: 0 }, aim: { x: -1, y: 0 }, shoot: true, revive: false },
+        ];
+        for (let t = 0; t < 600; t++) {
+          step(state, intents, rng, events);
+          events.drain();
+        }
+        return state;
+      }
+
+      const a = runSim(77);
+      const b = runSim(77);
+      expect(a.match.tick).toBe(b.match.tick);
+      expect(a.match.score).toBe(b.match.score);
+      for (let i = 0; i < a.players.length; i++) {
+        expect(a.players[i].pos.x).toBe(b.players[i].pos.x);
+        expect(a.players[i].pos.y).toBe(b.players[i].pos.y);
+      }
+    });
+  });
+}
+
+validateMapDef(MAP_CRUCIBLE);
+validateMapDef(MAP_GRIDLOCK);
+validateMapDef(MAP_LABYRINTH);
