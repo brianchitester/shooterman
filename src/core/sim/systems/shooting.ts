@@ -2,6 +2,7 @@ import type { GameState, PlayerIntent } from "../../state/Types";
 import type { SeededRng } from "../rng/seedRng";
 import type { EventBus } from "../../events/EventBus";
 import { getWeaponDef } from "../../defs/weapons";
+import { spawnBullet } from "./spawnBullet";
 
 export function shootingSystem(
   state: GameState,
@@ -30,16 +31,6 @@ export function shootingSystem(
       const wep = getWeaponDef(player.weaponId);
 
       for (let p = 0; p < wep.projectileCount; p++) {
-        // Find an inactive bullet slot
-        let slot = -1;
-        for (let b = 0; b < state.bullets.length; b++) {
-          if (!state.bullets[b].active) {
-            slot = b;
-            break;
-          }
-        }
-        if (slot === -1) break; // Pool exhausted
-
         // Calculate angle offset for spread
         let aimX = player.aim.x;
         let aimY = player.aim.y;
@@ -49,24 +40,17 @@ export function shootingSystem(
           const angle = -halfArc + step * p;
           const cos = Math.cos(angle);
           const sin = Math.sin(angle);
-          const rx = player.aim.x * cos - player.aim.y * sin;
-          const ry = player.aim.x * sin + player.aim.y * cos;
-          aimX = rx;
-          aimY = ry;
+          aimX = player.aim.x * cos - player.aim.y * sin;
+          aimY = player.aim.x * sin + player.aim.y * cos;
         }
 
-        const bullet = state.bullets[slot];
-        bullet.id = state.match.nextEntityId++;
-        bullet.ownerId = player.id;
-        bullet.pos.x = player.pos.x;
-        bullet.pos.y = player.pos.y;
-        bullet.vel.x = aimX * wep.bulletSpeed;
-        bullet.vel.y = aimY * wep.bulletSpeed;
-        bullet.ttl = wep.bulletTTL;
-        bullet.damage = wep.bulletDamage;
-        bullet.active = true;
-        bullet.fromEnemy = false;
-        bullet.weaponId = player.weaponId;
+        const bullet = spawnBullet(
+          state, player.id, player.pos,
+          aimX, aimY,
+          wep.bulletSpeed, wep.bulletTTL, wep.bulletDamage,
+          false, player.weaponId,
+        );
+        if (bullet === null) break; // Pool exhausted
 
         events.emit({
           type: "bullet_fired",

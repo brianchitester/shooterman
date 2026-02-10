@@ -5,6 +5,7 @@ import {
   SHOOTER_BULLET_SPEED, SHOOTER_BULLET_DAMAGE, SHOOTER_BULLET_TTL,
 } from "../../state/Defaults";
 import { resolveCircleTile } from "../tileCollision";
+import { spawnBullet } from "./spawnBullet";
 
 const ENEMY_COLLIDER_RADIUS = 12;
 
@@ -125,28 +126,13 @@ function updateShooter(enemy: EnemyState, state: GameState, dt: number): void {
     const aimX = dx / dist;
     const aimY = dy / dist;
 
-    // Find inactive bullet slot
-    let slot = -1;
-    for (let b = 0; b < state.bullets.length; b++) {
-      if (!state.bullets[b].active) {
-        slot = b;
-        break;
-      }
-    }
-
-    if (slot !== -1) {
-      const bullet = state.bullets[slot];
-      bullet.id = state.match.nextEntityId++;
-      bullet.ownerId = enemy.id;
-      bullet.pos.x = enemy.pos.x;
-      bullet.pos.y = enemy.pos.y;
-      bullet.vel.x = aimX * SHOOTER_BULLET_SPEED;
-      bullet.vel.y = aimY * SHOOTER_BULLET_SPEED;
-      bullet.ttl = SHOOTER_BULLET_TTL;
-      bullet.damage = SHOOTER_BULLET_DAMAGE;
-      bullet.active = true;
-      bullet.fromEnemy = true;
-
+    const bullet = spawnBullet(
+      state, enemy.id, enemy.pos,
+      aimX, aimY,
+      SHOOTER_BULLET_SPEED, SHOOTER_BULLET_TTL, SHOOTER_BULLET_DAMAGE,
+      true, "enemy_shooter",
+    );
+    if (bullet !== null) {
       enemy.fireCooldown = SHOOTER_FIRE_COOLDOWN;
     }
   }
