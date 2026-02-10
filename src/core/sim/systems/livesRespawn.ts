@@ -3,7 +3,7 @@ import type { EventBus } from "../../events/EventBus";
 import {
   PVP_RESPAWN_DELAY, SPAWN_INVULN_DURATION,
   DOWNED_BLEEDOUT_TIMER, REVIVE_HOLD_TIME, REVIVE_RADIUS,
-  PLAYER_HP, SPAWN_POINTS,
+  PLAYER_HP,
 } from "../../state/Defaults";
 
 export function livesRespawnSystem(
@@ -134,8 +134,9 @@ function respawnPlayer(state: GameState, player: typeof state.players[0], events
   let bestSpawn = 0;
   let bestMinDist = -1;
 
-  for (let s = 0; s < SPAWN_POINTS.length; s++) {
-    const sp = SPAWN_POINTS[s];
+  const spawnPoints = state.tiles.spawnPoints;
+  for (let s = 0; s < spawnPoints.length; s++) {
+    const sp = spawnPoints[s];
     let minDist = Infinity;
 
     // Check distance from alive players (threats in PvP)
@@ -165,7 +166,7 @@ function respawnPlayer(state: GameState, player: typeof state.players[0], events
     }
   }
 
-  const sp = SPAWN_POINTS[bestSpawn];
+  const sp = spawnPoints[bestSpawn];
   player.pos.x = sp.x;
   player.pos.y = sp.y;
   player.vel.x = 0;

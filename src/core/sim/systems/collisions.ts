@@ -1,6 +1,6 @@
 import type { GameState } from "../../state/Types";
 import type { EventBus } from "../../events/EventBus";
-import { ENEMY_CONTACT_DAMAGE, HIT_IFRAMES, CELL_SIZE, TILE_COLS, TILE_ROWS, DOWNED_BLEEDOUT_TIMER, PVP_RESPAWN_DELAY, PLAYER_KNOCKBACK, PLAYER_RADIUS, ENEMY_RADIUS, BULLET_RADIUS } from "../../state/Defaults";
+import { ENEMY_CONTACT_DAMAGE, HIT_IFRAMES, DOWNED_BLEEDOUT_TIMER, PVP_RESPAWN_DELAY, PLAYER_KNOCKBACK, PLAYER_RADIUS, ENEMY_RADIUS, BULLET_RADIUS } from "../../state/Defaults";
 
 function distSq(ax: number, ay: number, bx: number, by: number): number {
   const dx = ax - bx;
@@ -143,10 +143,11 @@ export function collisionSystem(state: GameState, events: EventBus): void {
     if (consumed) continue;
 
     // 3) Bullets vs Tiles (both player and enemy bullets)
-    const cellX = (bullet.pos.x / CELL_SIZE) | 0;
-    const cellY = (bullet.pos.y / CELL_SIZE) | 0;
-    if (cellX >= 0 && cellX < TILE_COLS && cellY >= 0 && cellY < TILE_ROWS) {
-      const idx = cellY * TILE_COLS + cellX;
+    const cs = state.tiles.cellSize;
+    const cellX = (bullet.pos.x / cs) | 0;
+    const cellY = (bullet.pos.y / cs) | 0;
+    if (cellX >= 0 && cellX < state.tiles.width && cellY >= 0 && cellY < state.tiles.height) {
+      const idx = cellY * state.tiles.width + cellX;
       const tile = state.tiles.cells[idx];
       if (tile.type === "breakable") {
         tile.hp -= bullet.damage;

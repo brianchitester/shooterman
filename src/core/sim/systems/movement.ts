@@ -1,10 +1,13 @@
 import type { GameState } from "../../state/Types";
-import { ARENA_WIDTH, ARENA_HEIGHT, CELL_SIZE } from "../../state/Defaults";
 import { resolveCircleTile } from "../tileCollision";
 
 const PLAYER_COLLIDER_RADIUS = 14;
 
 export function movementSystem(state: GameState, dt: number): void {
+  const cellSize = state.tiles.cellSize;
+  const arenaW = state.tiles.width * cellSize;
+  const arenaH = state.tiles.height * cellSize;
+
   for (let i = 0; i < state.players.length; i++) {
     const player = state.players[i];
     if (!player.alive && !player.downed) continue;
@@ -20,10 +23,10 @@ export function movementSystem(state: GameState, dt: number): void {
     player.pos.y = resolved.y;
 
     // Clamp to arena bounds (inside the border tiles)
-    const minX = CELL_SIZE;
-    const minY = CELL_SIZE;
-    const maxX = ARENA_WIDTH - CELL_SIZE;
-    const maxY = ARENA_HEIGHT - CELL_SIZE;
+    const minX = cellSize;
+    const minY = cellSize;
+    const maxX = arenaW - cellSize;
+    const maxY = arenaH - cellSize;
 
     if (player.pos.x < minX) player.pos.x = minX;
     if (player.pos.x > maxX) player.pos.x = maxX;

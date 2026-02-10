@@ -1,5 +1,4 @@
 import type { TileGrid } from "../state/Types";
-import { CELL_SIZE } from "../state/Defaults";
 
 /**
  * Resolves a circle entity against solid/breakable tiles.
@@ -12,11 +11,13 @@ export function resolveCircleTile(
   radius: number,
   tiles: TileGrid,
 ): { x: number; y: number } {
+  const cs = tiles.cellSize;
+
   // Check all cells the entity could overlap
-  const left = Math.max(0, ((posX - radius) / CELL_SIZE) | 0);
-  const right = Math.min(tiles.width - 1, ((posX + radius) / CELL_SIZE) | 0);
-  const top = Math.max(0, ((posY - radius) / CELL_SIZE) | 0);
-  const bottom = Math.min(tiles.height - 1, ((posY + radius) / CELL_SIZE) | 0);
+  const left = Math.max(0, ((posX - radius) / cs) | 0);
+  const right = Math.min(tiles.width - 1, ((posX + radius) / cs) | 0);
+  const top = Math.max(0, ((posY - radius) / cs) | 0);
+  const bottom = Math.min(tiles.height - 1, ((posY + radius) / cs) | 0);
 
   for (let row = top; row <= bottom; row++) {
     for (let col = left; col <= right; col++) {
@@ -24,10 +25,10 @@ export function resolveCircleTile(
       if (cell.type === "empty") continue;
 
       // AABB of the tile
-      const tileLeft = col * CELL_SIZE;
-      const tileTop = row * CELL_SIZE;
-      const tileRight = tileLeft + CELL_SIZE;
-      const tileBottom = tileTop + CELL_SIZE;
+      const tileLeft = col * cs;
+      const tileTop = row * cs;
+      const tileRight = tileLeft + cs;
+      const tileBottom = tileTop + cs;
 
       // Closest point on AABB to circle center
       const closestX = Math.max(tileLeft, Math.min(posX, tileRight));

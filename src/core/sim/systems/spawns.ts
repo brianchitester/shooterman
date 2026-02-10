@@ -2,7 +2,6 @@ import type { GameState } from "../../state/Types";
 import type { SeededRng } from "../rng/seedRng";
 import type { EventBus } from "../../events/EventBus";
 import {
-  ARENA_WIDTH, ARENA_HEIGHT, CELL_SIZE,
   SPAWN_SAFETY_DISTANCE, ENEMY_HP, SPAWN_TELEGRAPH_TICKS,
   SPAWN_RATE_BASE_INTERVAL, SPAWN_RATE_MIN_INTERVAL, SPAWN_RAMP_DURATION,
   SHOOTER_HP, SHOOTER_FIRE_COOLDOWN, SHOOTER_SPAWN_INTERVAL,
@@ -27,11 +26,14 @@ export function spawnSystem(state: GameState, dt: number, rng: SeededRng, events
 
   // Pick a spawn position at the arena edges
   // 4 cardinal edge zones — pick zone farthest from nearest player
+  const cs = state.tiles.cellSize;
+  const arenaW = state.tiles.width * cs;
+  const arenaH = state.tiles.height * cs;
   const zones = [
-    { x: rng.nextInt(CELL_SIZE * 2, ARENA_WIDTH - CELL_SIZE * 2), y: CELL_SIZE + 4 },          // top
-    { x: rng.nextInt(CELL_SIZE * 2, ARENA_WIDTH - CELL_SIZE * 2), y: ARENA_HEIGHT - CELL_SIZE - 4 }, // bottom
-    { x: CELL_SIZE + 4, y: rng.nextInt(CELL_SIZE * 2, ARENA_HEIGHT - CELL_SIZE * 2) },          // left
-    { x: ARENA_WIDTH - CELL_SIZE - 4, y: rng.nextInt(CELL_SIZE * 2, ARENA_HEIGHT - CELL_SIZE * 2) }, // right
+    { x: rng.nextInt(cs * 2, arenaW - cs * 2), y: cs + 4 },          // top
+    { x: rng.nextInt(cs * 2, arenaW - cs * 2), y: arenaH - cs - 4 }, // bottom
+    { x: cs + 4, y: rng.nextInt(cs * 2, arenaH - cs * 2) },          // left
+    { x: arenaW - cs - 4, y: rng.nextInt(cs * 2, arenaH - cs * 2) }, // right
   ];
 
   // Find zone farthest from nearest player
