@@ -1,5 +1,13 @@
-import type { MapDef } from "./MapDef";
+import type { MapDef, MapColorScheme } from "./MapDef";
 import type { TileType } from "../state/Types";
+
+export const DEFAULT_MAP_COLORS: MapColorScheme = {
+  background: 0x1a1a2e,
+  solid: 0x444444,
+  breakable: 0x8b6914,
+  breakableDamaged: 0x5c470e,
+  crack: 0x3a2f0a,
+};
 
 /**
  * Parse a visual ASCII layout into a TileType array.
@@ -67,6 +75,13 @@ export const MAP_ARENA: MapDef = {
     { x: 768, y: 672 },  // bottom-right
   ],
   cells: generateArenaCells(),
+  colors: {
+    background: 0x1a1a2e,
+    solid: 0x444444,
+    breakable: 0x8b6914,
+    breakableDamaged: 0x5c470e,
+    crack: 0x3a2f0a,
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -100,6 +115,13 @@ export const MAP_BUNKER: MapDef = {
     "#..............#",
     "################",
   ].join(""), 16),
+  colors: {
+    background: 0x0e1a0e,
+    solid: 0x2d4a2d,
+    breakable: 0x556b2f,
+    breakableDamaged: 0x3a4a1e,
+    crack: 0x2a3510,
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -141,6 +163,13 @@ export const MAP_CRUCIBLE: MapDef = {
     "#......................#",
     "########################",
   ].join(""), 24),
+  colors: {
+    background: 0x1a0e0e,
+    solid: 0x4a2d2d,
+    breakable: 0x8b2500,
+    breakableDamaged: 0x5c1a00,
+    crack: 0x3a1000,
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -186,6 +215,13 @@ export const MAP_GRIDLOCK: MapDef = {
     "#............................#",
     "##############################",
   ].join(""), 30),
+  colors: {
+    background: 0x0a0a1e,
+    solid: 0x1a3a5c,
+    breakable: 0x2980b9,
+    breakableDamaged: 0x1a5276,
+    crack: 0x0e3a52,
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -256,6 +292,13 @@ export const MAP_LABYRINTH: MapDef = {
     { x: 852, y: 660 },   // (35,27) bottom-right room
   ],
   cells: generateLabyrinthCells(),
+  colors: {
+    background: 0x1a1a16,
+    solid: 0x4a4a3a,
+    breakable: 0x6b6b4a,
+    breakableDamaged: 0x4a4a32,
+    crack: 0x33331e,
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -324,6 +367,13 @@ export const MAP_FORTRESS: MapDef = {
     { x: 918, y: 366 },   // (76,30) far right corridor
   ],
   cells: generateFortressCells(),
+  colors: {
+    background: 0x140e1a,
+    solid: 0x3a2d4a,
+    breakable: 0x5b3a7a,
+    breakableDamaged: 0x3d2652,
+    crack: 0x2a1a3a,
+  },
 };
 
 // ---------------------------------------------------------------------------

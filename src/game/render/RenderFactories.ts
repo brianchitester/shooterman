@@ -1,5 +1,7 @@
 import Phaser from "phaser";
 import type { TileGrid, EnemyType } from "../../core/state/Types";
+import type { MapColorScheme } from "../../core/defs/MapDef";
+import { DEFAULT_MAP_COLORS } from "../../core/defs/maps";
 
 export const PLAYER_COLORS: readonly number[] = [
   0xe74c3c, // Red
@@ -20,9 +22,6 @@ const ENEMY_BULLET_COLOR = 0xda70d6; // orchid — distinct from player bullets
 const CHASER_COLOR = 0x8b0000;
 const SHOOTER_COLOR = 0x6a0dad; // purple
 
-const TILE_SOLID_COLOR = 0x444444;
-const TILE_BREAKABLE_COLOR = 0x8b6914;
-const TILE_BREAKABLE_DAMAGED_COLOR = 0x5c470e;
 
 export function createPlayerGraphic(scene: Phaser.Scene, slot: number): Phaser.GameObjects.Graphics {
   const g = scene.add.graphics();
@@ -97,22 +96,22 @@ export function createTileGraphics(scene: Phaser.Scene): Phaser.GameObjects.Grap
   return g;
 }
 
-export function drawTiles(g: Phaser.GameObjects.Graphics, tiles: TileGrid): void {
+export function drawTiles(g: Phaser.GameObjects.Graphics, tiles: TileGrid, colors: MapColorScheme = DEFAULT_MAP_COLORS): void {
   g.clear();
   const cs = tiles.cellSize;
   for (let row = 0; row < tiles.height; row++) {
     for (let col = 0; col < tiles.width; col++) {
       const cell = tiles.cells[row * tiles.width + col];
       if (cell.type === "solid") {
-        g.fillStyle(TILE_SOLID_COLOR, 1);
+        g.fillStyle(colors.solid, 1);
         g.fillRect(col * cs, row * cs, cs, cs);
       } else if (cell.type === "breakable") {
-        const color = cell.hp < 2 ? TILE_BREAKABLE_DAMAGED_COLOR : TILE_BREAKABLE_COLOR;
+        const color = cell.hp < 2 ? colors.breakableDamaged : colors.breakable;
         g.fillStyle(color, 1);
         g.fillRect(col * cs, row * cs, cs, cs);
         // Crack lines on damaged tiles
         if (cell.hp < 2) {
-          g.lineStyle(1, 0x3a2f0a, 0.6);
+          g.lineStyle(1, colors.crack, 0.6);
           const x = col * cs;
           const y = row * cs;
           g.lineBetween(x + 8, y + 4, x + cs - 12, y + cs - 8);

@@ -13,6 +13,9 @@ import {
   drawTiles,
 } from "./RenderFactories";
 import { REVIVE_HOLD_TIME } from "../../core/state/Defaults";
+import type { MapColorScheme } from "../../core/defs/MapDef";
+import { getMapDef } from "../../core/defs/maps";
+import { DEFAULT_MAP_COLORS } from "../../core/defs/maps";
 
 export class RenderWorld {
   private playerGfx: Phaser.GameObjects.Graphics[] = [];
@@ -23,8 +26,13 @@ export class RenderWorld {
   private chaserGfx: Phaser.GameObjects.Graphics[] = [];
   private shooterGfx: Phaser.GameObjects.Graphics[] = [];
   private tileGfx!: Phaser.GameObjects.Graphics;
+  private colors: MapColorScheme = DEFAULT_MAP_COLORS;
 
   create(scene: Phaser.Scene, state: GameState): void {
+    // Resolve per-map color scheme
+    const mapDef = getMapDef(state.match.mapId);
+    this.colors = mapDef.colors ?? DEFAULT_MAP_COLORS;
+
     // Viewport fill — covers margins for maps smaller than the canvas
     const vpBg = scene.add.graphics();
     vpBg.fillStyle(0x0e0e1a, 1);
@@ -36,13 +44,13 @@ export class RenderWorld {
     const mapW = state.tiles.width * state.tiles.cellSize;
     const mapH = state.tiles.height * state.tiles.cellSize;
     const bg = scene.add.graphics();
-    bg.fillStyle(0x1a1a2e, 1);
+    bg.fillStyle(this.colors.background, 1);
     bg.fillRect(0, 0, mapW, mapH);
     bg.setDepth(0);
 
     // Tile grid
     this.tileGfx = createTileGraphics(scene);
-    drawTiles(this.tileGfx, state.tiles);
+    drawTiles(this.tileGfx, state.tiles, this.colors);
 
     // Player pool
     for (let i = 0; i < MAX_PLAYERS; i++) {
@@ -69,7 +77,7 @@ export class RenderWorld {
 
   update(state: GameState, prev: PrevPositions, alpha: number): void {
     // Redraw tile grid (destroyed tiles disappear)
-    drawTiles(this.tileGfx, state.tiles);
+    drawTiles(this.tileGfx, state.tiles, this.colors);
 
     // Players
     for (let i = 0; i < state.players.length; i++) {
