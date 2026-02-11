@@ -53,7 +53,7 @@ function createBulletSlot(): BulletState {
 function createEnemySlot(): EnemyState {
   return {
     id: 0,
-    type: "chaser",
+    typeId: "chaser",
     pos: { x: 0, y: 0 },
     vel: { x: 0, y: 0 },
     hp: 0,
@@ -62,6 +62,9 @@ function createEnemySlot(): EnemyState {
     fireCooldown: 0,
     knockback: 0,
     score: 0,
+    contactDamage: 0,
+    colliderRadius: 0,
+    moveSpeed: 0,
   };
 }
 

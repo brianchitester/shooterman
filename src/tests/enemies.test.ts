@@ -5,10 +5,10 @@ import { createEventBus } from "../core/events/EventBus";
 import { step } from "../core/sim/tick";
 import type { PlayerIntent, GameState } from "../core/state/Types";
 import {
-  SHOOTER_HP, SHOOTER_FIRE_COOLDOWN, SHOOTER_SPAWN_INTERVAL,
-  SHOOTER_BULLET_DAMAGE, SHOOTER_KNOCKBACK, SHOOTER_SCORE, ENEMY_HP, PLAYER_HP,
-  BREAKABLE_TILE_HP,
+  PLAYER_HP, BREAKABLE_TILE_HP,
 } from "../core/state/Defaults";
+import { ENEMY_CHASER, ENEMY_SHOOTER } from "../core/defs/enemies";
+import { initEnemyFromDef } from "../core/sim/systems/initEnemy";
 import { MAP_ARENA } from "../core/defs/maps";
 
 function emptyIntents(count: number): PlayerIntent[] {
@@ -21,45 +21,33 @@ function emptyIntents(count: number): PlayerIntent[] {
 
 /** Manually activate a shooter enemy in slot 0 for unit testing. */
 function placeShooter(state: GameState, x: number, y: number): void {
-  const enemy = state.enemies[0];
-  enemy.id = state.match.nextEntityId++;
-  enemy.type = "shooter";
-  enemy.pos.x = x;
-  enemy.pos.y = y;
-  enemy.vel.x = 0;
-  enemy.vel.y = 0;
-  enemy.hp = SHOOTER_HP;
-  enemy.active = true;
-  enemy.spawnTimer = 0;
-  enemy.fireCooldown = SHOOTER_FIRE_COOLDOWN;
-  enemy.knockback = SHOOTER_KNOCKBACK;
-  enemy.score = SHOOTER_SCORE;
+  initEnemyFromDef(state.enemies[0], ENEMY_SHOOTER, x, y, state);
+  state.enemies[0].spawnTimer = 0; // skip telegraph for tests
 }
 
 describe("shooter enemy type", () => {
   it("spawns a shooter every 10th enemy", () => {
     const state = createGameState("coop", 1, 42);
-    // Manually set spawnCount to 8 (next spawn = 9th = index 9-1=8... we want spawnCount%10===9)
-    // spawnCount increments AFTER type selection, so set to SHOOTER_SPAWN_INTERVAL - 1
-    state.match.spawnCount = SHOOTER_SPAWN_INTERVAL - 1;
+    const SPAWN_INTERVAL = 10; // matches spawns.ts modulo
+    state.match.spawnCount = SPAWN_INTERVAL - 1;
 
     // Directly activate an enemy slot as the spawn system would
     const enemy = state.enemies[0];
-    const type = state.match.spawnCount % SHOOTER_SPAWN_INTERVAL === (SHOOTER_SPAWN_INTERVAL - 1)
-      ? "shooter" as const
-      : "chaser" as const;
-    enemy.type = type;
+    const typeId = state.match.spawnCount % SPAWN_INTERVAL === (SPAWN_INTERVAL - 1)
+      ? "shooter"
+      : "chaser";
+    enemy.typeId = typeId;
     enemy.active = true;
 
-    expect(enemy.type).toBe("shooter");
+    expect(enemy.typeId).toBe("shooter");
   });
 
   it("shooter has correct HP", () => {
     const state = createGameState("coop", 1, 42);
     placeShooter(state, 400, 400);
-    expect(state.enemies[0].hp).toBe(SHOOTER_HP);
-    expect(SHOOTER_HP).toBe(3);
-    expect(SHOOTER_HP).toBeGreaterThan(ENEMY_HP);
+    expect(state.enemies[0].hp).toBe(ENEMY_SHOOTER.hp);
+    expect(ENEMY_SHOOTER.hp).toBe(3);
+    expect(ENEMY_SHOOTER.hp).toBeGreaterThan(ENEMY_CHASER.hp);
   });
 
   it("shooter fires bullet at player", () => {
@@ -136,14 +124,14 @@ describe("shooter enemy type", () => {
     bullet.vel.x = 0;
     bullet.vel.y = 1;
     bullet.ttl = 60;
-    bullet.damage = SHOOTER_BULLET_DAMAGE;
+    bullet.damage = ENEMY_SHOOTER.ranged!.bulletDamage;
     bullet.active = true;
     bullet.fromEnemy = true;
 
     step(state, intents, rng, events);
 
     // Player should have taken damage
-    expect(state.players[0].hp).toBe(PLAYER_HP - SHOOTER_BULLET_DAMAGE);
+    expect(state.players[0].hp).toBe(PLAYER_HP - ENEMY_SHOOTER.ranged!.bulletDamage);
   });
 
   it("enemy bullet does not hit enemies", () => {
@@ -158,16 +146,8 @@ describe("shooter enemy type", () => {
 
     // Activate a chaser enemy
     const enemy = state.enemies[0];
-    enemy.id = state.match.nextEntityId++;
-    enemy.type = "chaser";
-    enemy.pos.x = 480;
-    enemy.pos.y = 360;
-    enemy.vel.x = 0;
-    enemy.vel.y = 0;
-    enemy.hp = ENEMY_HP;
-    enemy.active = true;
-    enemy.spawnTimer = 0;
-    enemy.fireCooldown = 0;
+    initEnemyFromDef(enemy, ENEMY_CHASER, 480, 360, state);
+    enemy.spawnTimer = 0; // skip telegraph
 
     // Spawn a fromEnemy bullet right on the enemy
     const bullet = state.bullets[0];
@@ -185,7 +165,7 @@ describe("shooter enemy type", () => {
     step(state, intents, rng, events);
 
     // Enemy HP should be unchanged — enemy bullets don't hit enemies
-    expect(enemy.hp).toBe(ENEMY_HP);
+    expect(enemy.hp).toBe(ENEMY_CHASER.hp);
   });
 
   it("enemy bullet destroys breakable tile", () => {

@@ -1,6 +1,7 @@
 import Phaser from "phaser";
-import type { TileGrid, EnemyType } from "../../core/state/Types";
+import type { TileGrid } from "../../core/state/Types";
 import type { MapColorScheme } from "../../core/defs/MapDef";
+import type { EnemyDef } from "../../core/defs/EnemyDef";
 import { DEFAULT_MAP_COLORS } from "../../core/defs/maps";
 
 export const PLAYER_COLORS: readonly number[] = [
@@ -15,12 +16,9 @@ export const PLAYER_COLORS: readonly number[] = [
 
 const PLAYER_RADIUS = 14;  // 28px diameter
 const BULLET_RADIUS = 3;   // 6px diameter
-const ENEMY_RADIUS = 12;   // 24px diameter
 
 const BULLET_COLOR = 0xff8c00;
 const ENEMY_BULLET_COLOR = 0xda70d6; // orchid — distinct from player bullets
-const CHASER_COLOR = 0x8b0000;
-const SHOOTER_COLOR = 0x6a0dad; // purple
 
 
 export function createPlayerGraphic(scene: Phaser.Scene, slot: number): Phaser.GameObjects.Graphics {
@@ -59,35 +57,42 @@ export function createEnemyBulletGraphic(scene: Phaser.Scene): Phaser.GameObject
   return g;
 }
 
-export function createChaserEnemyGraphic(scene: Phaser.Scene): Phaser.GameObjects.Graphics {
-  const g = scene.add.graphics();
-  g.fillStyle(CHASER_COLOR, 1);
-  g.fillCircle(0, 0, ENEMY_RADIUS);
-  g.setVisible(false);
-  g.setDepth(2);
-  return g;
-}
+/** Draw an enemy shape into a Graphics object based on its EnemyDef visual. */
+export function drawEnemyShape(g: Phaser.GameObjects.Graphics, def: EnemyDef): void {
+  g.clear();
+  const r = def.colliderRadius;
+  g.fillStyle(def.visual.color, 1);
 
-export function createShooterEnemyGraphic(scene: Phaser.Scene): Phaser.GameObjects.Graphics {
-  const g = scene.add.graphics();
-  g.fillStyle(SHOOTER_COLOR, 1);
-  // Equilateral triangle pointing right, ~12px "radius" equivalent
-  const r = ENEMY_RADIUS;
-  g.fillTriangle(
-    r, 0,                                   // right tip
-    -r * 0.5, -r * 0.866,                   // top-left
-    -r * 0.5, r * 0.866,                    // bottom-left
-  );
-  g.setVisible(false);
-  g.setDepth(2);
-  return g;
-}
-
-export function createEnemyGraphicByType(scene: Phaser.Scene, type: EnemyType): Phaser.GameObjects.Graphics {
-  switch (type) {
-    case "chaser": return createChaserEnemyGraphic(scene);
-    case "shooter": return createShooterEnemyGraphic(scene);
+  switch (def.visual.shape) {
+    case "circle":
+      g.fillCircle(0, 0, r);
+      break;
+    case "triangle": {
+      g.fillTriangle(
+        r, 0,                       // right tip
+        -r * 0.5, -r * 0.866,      // top-left
+        -r * 0.5, r * 0.866,       // bottom-left
+      );
+      break;
+    }
+    case "diamond": {
+      g.fillTriangle(r, 0, 0, -r, -r, 0);
+      g.fillTriangle(r, 0, 0, r, -r, 0);
+      break;
+    }
+    case "square":
+      g.fillRect(-r, -r, r * 2, r * 2);
+      break;
   }
+}
+
+/** Create a Graphics object for an enemy, drawn from its EnemyDef. */
+export function createEnemyGraphic(scene: Phaser.Scene, def: EnemyDef): Phaser.GameObjects.Graphics {
+  const g = scene.add.graphics();
+  drawEnemyShape(g, def);
+  g.setVisible(false);
+  g.setDepth(2);
+  return g;
 }
 
 export function createTileGraphics(scene: Phaser.Scene): Phaser.GameObjects.Graphics {

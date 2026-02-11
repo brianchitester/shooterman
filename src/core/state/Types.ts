@@ -14,8 +14,6 @@ export interface Vec2 {
 
 export type Mode = "coop" | "pvp_time";
 
-export type EnemyType = "chaser" | "shooter";
-
 export interface PlayerState {
   id: EntityId;
   slot: number; // 0..6
@@ -53,15 +51,18 @@ export interface BulletState {
 
 export interface EnemyState {
   id: EntityId;
-  type: EnemyType;
+  typeId: string; // indexes into ENEMY_REGISTRY
   pos: Vec2;
   vel: Vec2;
   hp: number;
   active: boolean;
   spawnTimer: number; // ticks remaining in telegraph (0 = fully spawned)
-  fireCooldown: number; // ticks (0 for chasers, active for shooters)
-  knockback: number; // px, instant push on bullet hit (per-type)
-  score: number; // points awarded on kill (per-type)
+  fireCooldown: number; // ticks (0 for melee-only, active for ranged)
+  knockback: number; // px, instant push on bullet hit (from def)
+  score: number; // points awarded on kill (from def)
+  contactDamage: number; // damage dealt on touch (from def)
+  colliderRadius: number; // px (from def)
+  moveSpeed: number; // px/s (from def)
 }
 
 export type TileType = "empty" | "solid" | "breakable";

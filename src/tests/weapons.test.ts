@@ -154,7 +154,7 @@ describe("pierce behavior", () => {
     // Place two enemies in a line to the right
     const e1 = state.enemies[0];
     e1.id = state.match.nextEntityId++;
-    e1.type = "chaser";
+    e1.typeId = "chaser";
     e1.pos.x = 200;
     e1.pos.y = 100;
     e1.hp = 10; // high HP so they survive
@@ -162,10 +162,13 @@ describe("pierce behavior", () => {
     e1.spawnTimer = 0;
     e1.knockback = 0;
     e1.score = 100;
+    e1.contactDamage = 2;
+    e1.colliderRadius = 12;
+    e1.moveSpeed = 120;
 
     const e2 = state.enemies[1];
     e2.id = state.match.nextEntityId++;
-    e2.type = "chaser";
+    e2.typeId = "chaser";
     e2.pos.x = 250;
     e2.pos.y = 100;
     e2.hp = 10;
@@ -173,6 +176,9 @@ describe("pierce behavior", () => {
     e2.spawnTimer = 0;
     e2.knockback = 0;
     e2.score = 100;
+    e2.contactDamage = 2;
+    e2.colliderRadius = 12;
+    e2.moveSpeed = 120;
 
     // Fire
     const intents: PlayerIntent[] = [
@@ -209,7 +215,7 @@ describe("pierce behavior", () => {
     // Place two enemies in a line
     const e1 = state.enemies[0];
     e1.id = state.match.nextEntityId++;
-    e1.type = "chaser";
+    e1.typeId = "chaser";
     e1.pos.x = 200;
     e1.pos.y = 100;
     e1.hp = 10;
@@ -217,10 +223,13 @@ describe("pierce behavior", () => {
     e1.spawnTimer = 0;
     e1.knockback = 0;
     e1.score = 100;
+    e1.contactDamage = 2;
+    e1.colliderRadius = 12;
+    e1.moveSpeed = 120;
 
     const e2 = state.enemies[1];
     e2.id = state.match.nextEntityId++;
-    e2.type = "chaser";
+    e2.typeId = "chaser";
     e2.pos.x = 250;
     e2.pos.y = 100;
     e2.hp = 10;
@@ -228,6 +237,9 @@ describe("pierce behavior", () => {
     e2.spawnTimer = 0;
     e2.knockback = 0;
     e2.score = 100;
+    e2.contactDamage = 2;
+    e2.colliderRadius = 12;
+    e2.moveSpeed = 120;
 
     const intents: PlayerIntent[] = [
       { move: { x: 0, y: 0 }, aim: { x: 1, y: 0 }, shoot: true, revive: false },

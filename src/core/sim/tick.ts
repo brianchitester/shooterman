@@ -27,7 +27,7 @@ export function step(
   shootingSystem(state, intents, DT, rng, events);
   bulletSystem(state, DT);
   collisionSystem(state, events);
-  enemyAISystem(state, DT);
+  enemyAISystem(state, DT, events);
   spawnSystem(state, DT, rng, events);
   livesRespawnSystem(state, intents, DT, events);
   modeRulesSystem(state, DT);

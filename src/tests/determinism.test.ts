@@ -83,7 +83,7 @@ function statesEqual(a: GameState, b: GameState): boolean {
     if (ea.active) {
       if (ea.pos.x !== eb.pos.x || ea.pos.y !== eb.pos.y) return false;
       if (ea.hp !== eb.hp) return false;
-      if (ea.type !== eb.type) return false;
+      if (ea.typeId !== eb.typeId) return false;
     }
   }
 

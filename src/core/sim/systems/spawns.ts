@@ -2,12 +2,12 @@ import type { GameState } from "../../state/Types";
 import type { SeededRng } from "../rng/seedRng";
 import type { EventBus } from "../../events/EventBus";
 import {
-  SPAWN_SAFETY_DISTANCE, ENEMY_HP, SPAWN_TELEGRAPH_TICKS,
+  SPAWN_SAFETY_DISTANCE,
   SPAWN_RATE_BASE_INTERVAL, SPAWN_RATE_MIN_INTERVAL, SPAWN_RAMP_DURATION,
-  SHOOTER_HP, SHOOTER_FIRE_COOLDOWN, SHOOTER_SPAWN_INTERVAL,
-  CHASER_KNOCKBACK, CHASER_SCORE, SHOOTER_KNOCKBACK, SHOOTER_SCORE,
 } from "../../state/Defaults";
-import type { EnemyType } from "../../state/Types";
+import type { EnemyDef } from "../../defs/EnemyDef";
+import { ENEMY_LIST } from "../../defs/enemies";
+import { initEnemyFromDef } from "./initEnemy";
 
 // Only spawn enemies in co-op (PvP has no enemies)
 export function spawnSystem(state: GameState, dt: number, rng: SeededRng, events: EventBus): void {
@@ -89,30 +89,39 @@ export function spawnSystem(state: GameState, dt: number, rng: SeededRng, events
   }
   if (slot === -1) return; // Pool full
 
-  // Determine enemy type based on spawn count
-  const enemyType: EnemyType = state.match.spawnCount % SHOOTER_SPAWN_INTERVAL === (SHOOTER_SPAWN_INTERVAL - 1)
-    ? "shooter"
-    : "chaser";
-
-  const enemy = state.enemies[slot];
-  enemy.id = state.match.nextEntityId++;
-  enemy.type = enemyType;
-  enemy.pos.x = spawnPos.x;
-  enemy.pos.y = spawnPos.y;
-  enemy.vel.x = 0;
-  enemy.vel.y = 0;
-  enemy.hp = enemyType === "shooter" ? SHOOTER_HP : ENEMY_HP;
-  enemy.active = true;
-  enemy.spawnTimer = SPAWN_TELEGRAPH_TICKS;
-  enemy.fireCooldown = enemyType === "shooter" ? SHOOTER_FIRE_COOLDOWN : 0;
-  enemy.knockback = enemyType === "shooter" ? SHOOTER_KNOCKBACK : CHASER_KNOCKBACK;
-  enemy.score = enemyType === "shooter" ? SHOOTER_SCORE : CHASER_SCORE;
+  // Build weighted spawn pool from eligible enemy types
+  const def = pickEnemyDef(state.match.tick, rng);
+  initEnemyFromDef(state.enemies[slot], def, spawnPos.x, spawnPos.y, state);
 
   state.match.spawnCount++;
 
   events.emit({
     type: "enemy_spawned",
-    enemyId: enemy.id,
+    enemyId: state.enemies[slot].id,
     pos: { x: spawnPos.x, y: spawnPos.y },
   });
+}
+
+/** Pick an enemy def using weighted random selection from eligible types. */
+function pickEnemyDef(tick: number, rng: SeededRng): EnemyDef {
+  // Filter to types eligible at current tick
+  let totalWeight = 0;
+  for (let i = 0; i < ENEMY_LIST.length; i++) {
+    if (tick >= ENEMY_LIST[i].spawnAfterTick) {
+      totalWeight += ENEMY_LIST[i].spawnWeight;
+    }
+  }
+
+  // Fallback: if nothing eligible (shouldn't happen), return first
+  if (totalWeight <= 0) return ENEMY_LIST[0];
+
+  let roll = rng.nextInt(0, totalWeight - 1);
+  for (let i = 0; i < ENEMY_LIST.length; i++) {
+    const def = ENEMY_LIST[i];
+    if (tick < def.spawnAfterTick) continue;
+    roll -= def.spawnWeight;
+    if (roll < 0) return def;
+  }
+
+  return ENEMY_LIST[0];
 }

@@ -7,8 +7,8 @@ import {
   createAimIndicator,
   createBulletGraphic,
   createEnemyBulletGraphic,
-  createChaserEnemyGraphic,
-  createShooterEnemyGraphic,
+  createEnemyGraphic,
+  drawEnemyShape,
   createTileGraphics,
   drawTiles,
 } from "./RenderFactories";
@@ -16,6 +16,7 @@ import { REVIVE_HOLD_TIME } from "../../core/state/Defaults";
 import type { MapColorScheme } from "../../core/defs/MapDef";
 import { getMapDef } from "../../core/defs/maps";
 import { DEFAULT_MAP_COLORS } from "../../core/defs/maps";
+import { getEnemyDef, ENEMY_CHASER } from "../../core/defs/enemies";
 
 export class RenderWorld {
   private playerGfx: Phaser.GameObjects.Graphics[] = [];
@@ -23,8 +24,8 @@ export class RenderWorld {
   private reviveRingGfx: Phaser.GameObjects.Graphics[] = [];
   private bulletGfx: Phaser.GameObjects.Graphics[] = [];
   private enemyBulletGfx: Phaser.GameObjects.Graphics[] = [];
-  private chaserGfx: Phaser.GameObjects.Graphics[] = [];
-  private shooterGfx: Phaser.GameObjects.Graphics[] = [];
+  private enemyGfx: Phaser.GameObjects.Graphics[] = [];
+  private enemyTypeCache: string[] = []; // track typeId to know when to redraw
   private tileGfx!: Phaser.GameObjects.Graphics;
   private colors: MapColorScheme = DEFAULT_MAP_COLORS;
 
@@ -68,10 +69,10 @@ export class RenderWorld {
       this.enemyBulletGfx[i] = createEnemyBulletGraphic(scene);
     }
 
-    // Enemy pool — one chaser + one shooter graphic per slot
+    // Enemy pool — single graphic per slot, drawn from def on first use
     for (let i = 0; i < MAX_ENEMIES; i++) {
-      this.chaserGfx[i] = createChaserEnemyGraphic(scene);
-      this.shooterGfx[i] = createShooterEnemyGraphic(scene);
+      this.enemyGfx[i] = createEnemyGraphic(scene, ENEMY_CHASER);
+      this.enemyTypeCache[i] = "";
     }
   }
 
@@ -164,13 +165,19 @@ export class RenderWorld {
       }
     }
 
-    // Enemies — show correct graphic based on type
+    // Enemies — single graphic per slot, redraw shape if type changed
     for (let i = 0; i < state.enemies.length; i++) {
       const e = state.enemies[i];
-      const chaser = this.chaserGfx[i];
-      const shooter = this.shooterGfx[i];
+      const gfx = this.enemyGfx[i];
 
       if (e.active) {
+        // Redraw graphic if enemy type changed (new spawn in this slot)
+        if (this.enemyTypeCache[i] !== e.typeId) {
+          const def = getEnemyDef(e.typeId);
+          drawEnemyShape(gfx, def);
+          this.enemyTypeCache[i] = e.typeId;
+        }
+
         // Snap on first frame (slot just activated) to avoid ghost lerp from stale prev
         const snap = !prev.enemyWasActive[i];
         const rx = snap ? e.pos.x : prev.enemies[i].x + (e.pos.x - prev.enemies[i].x) * alpha;
@@ -181,24 +188,21 @@ export class RenderWorld {
           ? (((e.spawnTimer >> 2) & 1) ? 0.2 : 0.5)
           : 1;
 
-        if (e.type === "shooter") {
-          shooter.setPosition(rx, ry);
-          shooter.setVisible(true);
-          shooter.setAlpha(a);
-          // Rotate triangle to face movement direction
-          if (e.vel.x !== 0 || e.vel.y !== 0) {
-            shooter.setRotation(Math.atan2(e.vel.y, e.vel.x));
-          }
-          chaser.setVisible(false);
-        } else {
-          chaser.setPosition(rx, ry);
-          chaser.setVisible(true);
-          chaser.setAlpha(a);
-          shooter.setVisible(false);
+        gfx.setPosition(rx, ry);
+        gfx.setVisible(true);
+        gfx.setAlpha(a);
+
+        // Rotate to velocity direction for types that want it
+        const def = getEnemyDef(e.typeId);
+        if (def.visual.rotateToVelocity && (e.vel.x !== 0 || e.vel.y !== 0)) {
+          gfx.setRotation(Math.atan2(e.vel.y, e.vel.x));
         }
       } else {
-        chaser.setVisible(false);
-        shooter.setVisible(false);
+        gfx.setVisible(false);
+        // Clear type cache so next activation redraws
+        if (this.enemyTypeCache[i] !== "") {
+          this.enemyTypeCache[i] = "";
+        }
       }
     }
   }

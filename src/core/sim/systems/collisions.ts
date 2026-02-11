@@ -1,6 +1,6 @@
 import type { GameState } from "../../state/Types";
 import type { EventBus } from "../../events/EventBus";
-import { ENEMY_CONTACT_DAMAGE, HIT_IFRAMES, DOWNED_BLEEDOUT_TIMER, PVP_RESPAWN_DELAY, PLAYER_KNOCKBACK, PLAYER_RADIUS, ENEMY_RADIUS, BULLET_RADIUS } from "../../state/Defaults";
+import { HIT_IFRAMES, DOWNED_BLEEDOUT_TIMER, PVP_RESPAWN_DELAY, PLAYER_KNOCKBACK, PLAYER_RADIUS, BULLET_RADIUS } from "../../state/Defaults";
 
 function distSq(ax: number, ay: number, bx: number, by: number): number {
   const dx = ax - bx;
@@ -25,7 +25,7 @@ export function collisionSystem(state: GameState, events: EventBus): void {
         // Pierce: skip entity we just pierced through
         if (enemy.id === bullet.lastPierceId) continue;
 
-        const hitDist = BULLET_RADIUS + ENEMY_RADIUS;
+        const hitDist = BULLET_RADIUS + enemy.colliderRadius;
         if (distSq(bullet.pos.x, bullet.pos.y, enemy.pos.x, enemy.pos.y) < hitDist * hitDist) {
           enemy.hp -= bullet.damage;
 
@@ -194,9 +194,9 @@ export function collisionSystem(state: GameState, events: EventBus): void {
       if (!player.alive) continue;
       if (player.invulnTimer > 0) continue;
 
-      const contactDist = ENEMY_RADIUS + PLAYER_RADIUS;
+      const contactDist = enemy.colliderRadius + PLAYER_RADIUS;
       if (distSq(enemy.pos.x, enemy.pos.y, player.pos.x, player.pos.y) < contactDist * contactDist) {
-        player.hp -= ENEMY_CONTACT_DAMAGE;
+        player.hp -= enemy.contactDamage;
         player.invulnTimer = HIT_IFRAMES; // Brief i-frames after contact hit
 
         if (player.hp <= 0) {

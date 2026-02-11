@@ -25,6 +25,8 @@ function placeEnemyOnPlayer(state: ReturnType<typeof createGameState>, playerIdx
   enemy.active = true;
   enemy.hp = 99;
   enemy.spawnTimer = 0;
+  enemy.contactDamage = ENEMY_CONTACT_DAMAGE;
+  enemy.colliderRadius = 12;
   enemy.pos.x = state.players[playerIdx].pos.x;
   enemy.pos.y = state.players[playerIdx].pos.y;
 }
