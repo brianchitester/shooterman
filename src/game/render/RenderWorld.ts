@@ -7,7 +7,7 @@ import {
   createPlayerGraphic,
   createAimIndicator,
   createBulletGraphic,
-  createEnemyBulletGraphic,
+  drawBulletShape,
   createEnemyGraphic,
   drawEnemyShape,
   createTileGraphics,
@@ -35,7 +35,7 @@ export class RenderWorld {
   private aimGfx: Phaser.GameObjects.Graphics[] = [];
   private reviveRingGfx: Phaser.GameObjects.Graphics[] = [];
   private bulletGfx: Phaser.GameObjects.Graphics[] = [];
-  private enemyBulletGfx: Phaser.GameObjects.Graphics[] = [];
+  private bulletFromEnemy: boolean[] = [];
   private enemyGfx: Phaser.GameObjects.Graphics[] = [];
   private enemyTypeCache: string[] = []; // track typeId to know when to redraw
   private tileGfx!: Phaser.GameObjects.Graphics;
@@ -78,10 +78,10 @@ export class RenderWorld {
       this.reviveRingGfx[i] = ring;
     }
 
-    // Bullet pool — one player-bullet graphic + one enemy-bullet graphic per slot
+    // Bullet pool — single graphic per slot, recolored on fromEnemy change
     for (let i = 0; i < MAX_BULLETS; i++) {
       this.bulletGfx[i] = createBulletGraphic(scene);
-      this.enemyBulletGfx[i] = createEnemyBulletGraphic(scene);
+      this.bulletFromEnemy[i] = false;
     }
 
     // Enemy pool — single graphic per slot, drawn from def on first use
@@ -198,30 +198,27 @@ export class RenderWorld {
       this.reviveRingGfx[i].setVisible(false);
     }
 
-    // Bullets — show correct graphic based on fromEnemy
+    // Bullets — single graphic per slot, recolor when fromEnemy changes
     for (let i = 0; i < state.bullets.length; i++) {
       const b = state.bullets[i];
-      const playerBullet = this.bulletGfx[i];
-      const enemyBullet = this.enemyBulletGfx[i];
+      const gfx = this.bulletGfx[i];
 
       if (b.active) {
+        // Recolor if fromEnemy state changed
+        if (b.fromEnemy !== this.bulletFromEnemy[i]) {
+          drawBulletShape(gfx, b.fromEnemy);
+          this.bulletFromEnemy[i] = b.fromEnemy;
+        }
+
         // Snap on first frame (slot just activated) to avoid ghost lerp from stale prev
         const snap = !prev.bulletWasActive[i];
         const rx = snap ? b.pos.x : prev.bullets[i].x + (b.pos.x - prev.bullets[i].x) * alpha;
         const ry = snap ? b.pos.y : prev.bullets[i].y + (b.pos.y - prev.bullets[i].y) * alpha;
 
-        if (b.fromEnemy) {
-          enemyBullet.setPosition(rx, ry);
-          enemyBullet.setVisible(true);
-          playerBullet.setVisible(false);
-        } else {
-          playerBullet.setPosition(rx, ry);
-          playerBullet.setVisible(true);
-          enemyBullet.setVisible(false);
-        }
+        gfx.setPosition(rx, ry);
+        gfx.setVisible(true);
       } else {
-        playerBullet.setVisible(false);
-        enemyBullet.setVisible(false);
+        gfx.setVisible(false);
       }
     }
 

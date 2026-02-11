@@ -3,7 +3,7 @@ import { createGameState, addPlayerToState } from "../../core/state/GameState";
 import { createRng } from "../../core/sim/rng/seedRng";
 import { createEventBus } from "../../core/events/EventBus";
 import { step } from "../../core/sim/tick";
-import { TICKS_PER_SECOND, MAX_PLAYERS, ARENA_WIDTH, ARENA_HEIGHT } from "../../core/state/Defaults";
+import { DT, MAX_PLAYERS, ARENA_WIDTH, ARENA_HEIGHT } from "../../core/state/Defaults";
 import { getMapDef } from "../../core/defs/maps";
 import type { GameState, Mode, DeviceAssignment } from "../../core/state/Types";
 import type { SeededRng } from "../../core/sim/rng/seedRng";
@@ -15,7 +15,6 @@ import { InputManager } from "../input/InputManager";
 import { createPrevPositions, snapshotPositions } from "../render/PrevPositions";
 import type { PrevPositions } from "../render/PrevPositions";
 
-const DT = 1 / TICKS_PER_SECOND;
 const MAX_STEPS_PER_FRAME = 5;
 
 interface LobbyData {

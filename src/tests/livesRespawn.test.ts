@@ -8,8 +8,9 @@ import { shootingSystem } from "../core/sim/systems/shooting";
 import type { PlayerIntent } from "../core/state/Types";
 import {
   DOWNED_BLEEDOUT_TIMER, REVIVE_HOLD_TIME, SPAWN_INVULN_DURATION,
-  PLAYER_HP, DOWNED_CRAWL_SPEED, ENEMY_CONTACT_DAMAGE, TICKS_PER_SECOND,
+  PLAYER_HP, DOWNED_CRAWL_SPEED, DT,
 } from "../core/state/Defaults";
+import { ENEMY_CHASER } from "../core/defs/enemies";
 
 function emptyIntents(count: number): PlayerIntent[] {
   const intents: PlayerIntent[] = [];
@@ -25,7 +26,7 @@ function placeEnemyOnPlayer(state: ReturnType<typeof createGameState>, playerIdx
   enemy.active = true;
   enemy.hp = 99;
   enemy.spawnTimer = 0;
-  enemy.contactDamage = ENEMY_CONTACT_DAMAGE;
+  enemy.contactDamage = ENEMY_CHASER.contactDamage;
   enemy.colliderRadius = 12;
   enemy.pos.x = state.players[playerIdx].pos.x;
   enemy.pos.y = state.players[playerIdx].pos.y;
@@ -38,7 +39,7 @@ describe("M6: Co-op shared lives + downed/revive", () => {
     const events = createEventBus();
 
     // Reduce HP so one contact kills
-    state.players[0].hp = ENEMY_CONTACT_DAMAGE;
+    state.players[0].hp = ENEMY_CHASER.contactDamage;
     placeEnemyOnPlayer(state, 0);
 
     step(state, emptyIntents(2), rng, events);
@@ -220,7 +221,6 @@ describe("M6: Co-op shared lives + downed/revive", () => {
     state.players[0].downed = true;
     state.players[0].downedTimer = DOWNED_BLEEDOUT_TIMER;
 
-    const DT = 1 / TICKS_PER_SECOND;
     const intents: PlayerIntent[] = [
       { move: { x: 1, y: 0 }, aim: { x: 1, y: 0 }, shoot: false, revive: false },
     ];
@@ -242,7 +242,6 @@ describe("M6: Co-op shared lives + downed/revive", () => {
     state.players[0].downedTimer = DOWNED_BLEEDOUT_TIMER;
     state.players[0].fireCooldown = 0;
 
-    const DT = 1 / TICKS_PER_SECOND;
     const intents: PlayerIntent[] = [
       { move: { x: 0, y: 0 }, aim: { x: 1, y: 0 }, shoot: true, revive: false },
     ];

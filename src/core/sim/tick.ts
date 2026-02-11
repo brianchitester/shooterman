@@ -1,7 +1,7 @@
 import type { GameState, PlayerIntent } from "../state/Types";
 import type { SeededRng } from "./rng/seedRng";
 import type { EventBus } from "../events/EventBus";
-import { TICKS_PER_SECOND } from "../state/Defaults";
+import { DT } from "../state/Defaults";
 import { applyIntents } from "./systems/applyIntents";
 import { movementSystem } from "./systems/movement";
 import { shootingSystem } from "./systems/shooting";
@@ -11,8 +11,6 @@ import { enemyAISystem } from "./systems/enemies";
 import { spawnSystem } from "./systems/spawns";
 import { livesRespawnSystem } from "./systems/livesRespawn";
 import { modeRulesSystem } from "./systems/modeRules";
-
-const DT = 1 / TICKS_PER_SECOND;
 
 export function step(
   state: GameState,

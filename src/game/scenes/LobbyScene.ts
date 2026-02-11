@@ -4,6 +4,7 @@ import { MAX_PLAYERS } from "../../core/state/Defaults";
 import { PLAYER_COLORS } from "../render/RenderFactories";
 import { MAP_LIST } from "../../core/defs/maps";
 import { WEAPON_LIST } from "../../core/defs/weapons";
+import { getModeLabel, getMapLabel, getWeaponLabel, nextMode, cycleIndex } from "../ui/menuUtils";
 
 const SLOT_RADIUS = 24;
 const TEXT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
@@ -111,7 +112,7 @@ export class LobbyScene extends Phaser.Scene {
 
     // Mode display
     this.modeText = this.add
-      .text(cx, 430, this.getModeLabel(), {
+      .text(cx, 430, getModeLabel(this.mode), {
         fontSize: "24px",
         color: "#f1c40f",
         fontFamily: "monospace",
@@ -120,7 +121,7 @@ export class LobbyScene extends Phaser.Scene {
 
     // Map display
     this.mapText = this.add
-      .text(cx, 465, this.getMapLabel(), {
+      .text(cx, 465, getMapLabel(this.mapIndex), {
         fontSize: "20px",
         color: "#3498db",
         fontFamily: "monospace",
@@ -129,7 +130,7 @@ export class LobbyScene extends Phaser.Scene {
 
     // Weapon display
     this.weaponText = this.add
-      .text(cx, 500, this.getWeaponLabel(), {
+      .text(cx, 500, getWeaponLabel(this.weaponIndex), {
         fontSize: "20px",
         color: "#e74c3c",
         fontFamily: "monospace",
@@ -251,18 +252,6 @@ export class LobbyScene extends Phaser.Scene {
     }
   }
 
-  private getModeLabel(): string {
-    return this.mode === "coop" ? "MODE: SURVIVAL" : "MODE: DEATHMATCH";
-  }
-
-  private getMapLabel(): string {
-    return `MAP: ${MAP_LIST[this.mapIndex].name.toUpperCase()}`;
-  }
-
-  private getWeaponLabel(): string {
-    return `WEAPON: ${WEAPON_LIST[this.weaponIndex].name.toUpperCase()}`;
-  }
-
   private getPlayerCount(): number {
     let count = 0;
     for (let i = 0; i < this.slots.length; i++) {
@@ -333,18 +322,18 @@ export class LobbyScene extends Phaser.Scene {
   }
 
   private toggleMode(): void {
-    this.mode = this.mode === "coop" ? "pvp_time" : "coop";
-    this.modeText.setText(this.getModeLabel());
+    this.mode = nextMode(this.mode);
+    this.modeText.setText(getModeLabel(this.mode));
   }
 
   private cycleMap(direction: number): void {
-    this.mapIndex = (this.mapIndex + direction + MAP_LIST.length) % MAP_LIST.length;
-    this.mapText.setText(this.getMapLabel());
+    this.mapIndex = cycleIndex(this.mapIndex, direction, MAP_LIST.length);
+    this.mapText.setText(getMapLabel(this.mapIndex));
   }
 
   private cycleWeapon(direction: number): void {
-    this.weaponIndex = (this.weaponIndex + direction + WEAPON_LIST.length) % WEAPON_LIST.length;
-    this.weaponText.setText(this.getWeaponLabel());
+    this.weaponIndex = cycleIndex(this.weaponIndex, direction, WEAPON_LIST.length);
+    this.weaponText.setText(getWeaponLabel(this.weaponIndex));
   }
 
   private updateStartPrompt(): void {

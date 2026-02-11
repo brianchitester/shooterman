@@ -1,5 +1,6 @@
 // Timing
 export const TICKS_PER_SECOND = 60;
+export const DT = 1 / TICKS_PER_SECOND;
 
 // Viewport (canvas size — maps may be equal or smaller)
 export const ARENA_WIDTH = 960;
@@ -25,7 +26,6 @@ export const BULLET_RADIUS = 4;
 // Player bullet balance now in src/core/defs/weapons.ts (WeaponDef)
 
 // Enemy balance — per-type stats are now in src/core/defs/enemies.ts (EnemyDef)
-export const ENEMY_CONTACT_DAMAGE = 2; // kept for test backward compat; prefer EnemyDef.contactDamage
 export const PLAYER_KNOCKBACK = 12; // px, PvP bullet hit knockback
 
 // Tile balance

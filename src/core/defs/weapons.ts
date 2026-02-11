@@ -72,31 +72,6 @@ export const WEAPON_RIFLE: WeaponDef = {
   pierceCount: 2,      // passes through 2 entities
 };
 
-// Legacy defs kept for compatibility
-export const WEAPON_SPREAD: WeaponDef = {
-  id: "spread",
-  name: "Spread",
-  fireRate: 24,
-  bulletSpeed: 500,
-  bulletTTL: 40,
-  bulletDamage: 1,
-  projectileCount: 5,
-  spreadAngle: Math.PI / 6,
-  pierceCount: 0,
-};
-
-export const WEAPON_EXPLOSIVE: WeaponDef = {
-  id: "explosive",
-  name: "Explosive",
-  fireRate: 45,
-  bulletSpeed: 400,
-  bulletTTL: 90,
-  bulletDamage: 3,
-  projectileCount: 1,
-  spreadAngle: 0,
-  pierceCount: 0,
-};
-
 // Weapons available in lobby selection (ordered)
 export const WEAPON_LIST: ReadonlyArray<WeaponDef> = [
   WEAPON_AUTO, WEAPON_MACHINE_GUN, WEAPON_SHOTGUN,
@@ -107,10 +82,9 @@ export const WEAPON_REGISTRY: Record<string, WeaponDef> = {};
 for (const w of WEAPON_LIST) {
   WEAPON_REGISTRY[w.id] = w;
 }
-// Also register legacy defs
-WEAPON_REGISTRY[WEAPON_SPREAD.id] = WEAPON_SPREAD;
-WEAPON_REGISTRY[WEAPON_EXPLOSIVE.id] = WEAPON_EXPLOSIVE;
 
 export function getWeaponDef(id: string): WeaponDef {
-  return WEAPON_REGISTRY[id] ?? WEAPON_AUTO;
+  const def = WEAPON_REGISTRY[id];
+  if (!def) throw new Error(`Unknown weapon: "${id}"`);
+  return def;
 }

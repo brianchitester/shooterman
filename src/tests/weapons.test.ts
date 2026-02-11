@@ -21,16 +21,8 @@ describe("WeaponDef registry", () => {
     expect(wep.spreadAngle).toBe(0);
   });
 
-  it("getWeaponDef('unknown') falls back to auto", () => {
-    const wep = getWeaponDef("unknown");
-    expect(wep).toBe(WEAPON_AUTO);
-  });
-
-  it("getWeaponDef('spread') returns spread weapon", () => {
-    const wep = getWeaponDef("spread");
-    expect(wep.id).toBe("spread");
-    expect(wep.projectileCount).toBe(5);
-    expect(wep.spreadAngle).toBeGreaterThan(0);
+  it("getWeaponDef('unknown') throws", () => {
+    expect(() => getWeaponDef("unknown")).toThrow('Unknown weapon: "unknown"');
   });
 
   it("all registry entries have matching id", () => {

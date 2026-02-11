@@ -433,5 +433,7 @@ for (const m of MAP_LIST) {
 }
 
 export function getMapDef(id: string): MapDef {
-  return MAP_REGISTRY[id] ?? MAP_ARENA;
+  const def = MAP_REGISTRY[id];
+  if (!def) throw new Error(`Unknown map: "${id}"`);
+  return def;
 }

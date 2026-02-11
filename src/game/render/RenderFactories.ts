@@ -15,8 +15,8 @@ export const PLAYER_COLORS: readonly number[] = [
 ];
 const BULLET_RADIUS = 3;   // 6px diameter
 
-const BULLET_COLOR = 0xff8c00;
-const ENEMY_BULLET_COLOR = 0xda70d6; // orchid — distinct from player bullets
+export const BULLET_COLOR = 0xff8c00;
+export const ENEMY_BULLET_COLOR = 0xda70d6; // orchid — distinct from player bullets
 
 
 export function createPlayerGraphic(scene: Phaser.Scene, slot: number): Phaser.GameObjects.Graphics {
@@ -46,13 +46,10 @@ export function createBulletGraphic(scene: Phaser.Scene): Phaser.GameObjects.Gra
   return g;
 }
 
-export function createEnemyBulletGraphic(scene: Phaser.Scene): Phaser.GameObjects.Graphics {
-  const g = scene.add.graphics();
-  g.fillStyle(ENEMY_BULLET_COLOR, 1);
+export function drawBulletShape(g: Phaser.GameObjects.Graphics, fromEnemy: boolean): void {
+  g.clear();
+  g.fillStyle(fromEnemy ? ENEMY_BULLET_COLOR : BULLET_COLOR, 1);
   g.fillCircle(0, 0, BULLET_RADIUS);
-  g.setVisible(false);
-  g.setDepth(4);
-  return g;
 }
 
 /** Draw an enemy shape into a Graphics object based on its EnemyDef visual. */

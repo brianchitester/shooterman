@@ -17,9 +17,8 @@ describe("MapDef registry", () => {
     expect(map).toBe(MAP_ARENA);
   });
 
-  it("getMapDef('unknown') falls back to arena", () => {
-    const map = getMapDef("unknown");
-    expect(map).toBe(MAP_ARENA);
+  it("getMapDef('unknown') throws", () => {
+    expect(() => getMapDef("unknown")).toThrow('Unknown map: "unknown"');
   });
 
   it("all registry entries have matching id", () => {

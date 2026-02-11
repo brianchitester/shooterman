@@ -85,5 +85,7 @@ for (const e of ENEMY_LIST) {
 }
 
 export function getEnemyDef(id: string): EnemyDef {
-  return ENEMY_REGISTRY[id] ?? ENEMY_CHASER;
+  const def = ENEMY_REGISTRY[id];
+  if (!def) throw new Error(`Unknown enemy: "${id}"`);
+  return def;
 }
