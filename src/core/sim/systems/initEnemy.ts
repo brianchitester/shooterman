@@ -25,4 +25,5 @@ export function initEnemyFromDef(
   enemy.contactDamage = def.contactDamage;
   enemy.colliderRadius = def.colliderRadius;
   enemy.moveSpeed = def.moveSpeed;
+  enemy.spinAngle = 0;
 }

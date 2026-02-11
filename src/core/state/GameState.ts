@@ -65,6 +65,7 @@ function createEnemySlot(): EnemyState {
     contactDamage: 0,
     colliderRadius: 0,
     moveSpeed: 0,
+    spinAngle: 0,
   };
 }
 

@@ -2,6 +2,7 @@ import type { EnemyBehavior } from "../EnemyBehavior";
 import { chaseBehavior } from "./chase";
 import { strafeShootBehavior } from "./strafeShoot";
 import { orbitBehavior } from "./orbit";
+import { spinChaseBehavior } from "./spinChase";
 
 const BEHAVIOR_REGISTRY: Record<string, EnemyBehavior> = {};
 
@@ -13,6 +14,7 @@ function register(b: EnemyBehavior): void {
 register(chaseBehavior);
 register(strafeShootBehavior);
 register(orbitBehavior);
+register(spinChaseBehavior);
 
 export function getBehavior(id: string): EnemyBehavior {
   const b = BEHAVIOR_REGISTRY[id];

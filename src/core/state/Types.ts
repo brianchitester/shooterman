@@ -63,6 +63,7 @@ export interface EnemyState {
   contactDamage: number; // damage dealt on touch (from def)
   colliderRadius: number; // px (from def)
   moveSpeed: number; // px/s (from def)
+  spinAngle: number; // radians, used by spinning behaviors
 }
 
 export type TileType = "empty" | "solid" | "breakable";

@@ -49,20 +49,28 @@ export const ENEMY_SHOOTER: EnemyDef = {
 export const ENEMY_SPINNER: EnemyDef = {
   id: "spinner",
   name: "Spinner",
-  hp: 2,
-  moveSpeed: 150,          // px/s — fast orbiter
-  contactDamage: 1,        // lighter touch damage
-  colliderRadius: 10,      // smaller
+  hp: 3,
+  moveSpeed: 55,            // px/s — slow chase
+  contactDamage: 1,
+  colliderRadius: 10,
   knockback: 16,
-  score: 150,
+  score: 200,
+  ranged: {
+    fireRate: 6,             // ticks — fires very frequently (rotating stream)
+    bulletSpeed: 250,        // px/s — slower bullets for readability
+    bulletDamage: 1,
+    bulletTTL: 75,           // ticks (1.25s)
+    preferredRange: 0,       // unused by spin_chase
+    weaponId: "enemy_spinner",
+  },
   visual: {
     shape: "diamond",
-    color: 0x00bfff,        // deep sky blue
-    rotateToVelocity: true,
+    color: 0x00bfff,         // deep sky blue
+    rotateToVelocity: false, // spins independently of movement
   },
-  behaviorId: "orbit",
+  behaviorId: "spin_chase",
   spawnWeight: 2,
-  spawnAfterTick: 1800,    // appears after 30s
+  spawnAfterTick: 1800,     // appears after 30s
 };
 
 export const ENEMY_LIST: ReadonlyArray<EnemyDef> = [

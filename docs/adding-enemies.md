@@ -104,6 +104,7 @@ That's it. The spawn system will automatically include your enemy using weighted
 | `chase` | Beeline toward nearest player | No |
 | `strafe_shoot` | Maintain distance, strafe, fire projectiles | Yes |
 | `orbit` | Circle nearest player at fixed radius | No |
+| `spin_chase` | Chase player while firing bullets in a rotating pattern | Yes |
 
 ## Architecture Notes
 
