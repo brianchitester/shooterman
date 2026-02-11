@@ -26,14 +26,57 @@ export function parseLayout(layout: string, cols: number): TileType[] {
   return cells;
 }
 
+/**
+ * Nearest-neighbor scale a TileType[] from one grid size to another.
+ */
+function scaleLayout(
+  src: TileType[], srcCols: number, srcRows: number,
+  dstCols: number, dstRows: number,
+): TileType[] {
+  const dst: TileType[] = new Array(dstCols * dstRows);
+  for (let row = 0; row < dstRows; row++) {
+    const srcRow = Math.floor(row * srcRows / dstRows);
+    for (let col = 0; col < dstCols; col++) {
+      const srcCol = Math.floor(col * srcCols / dstCols);
+      dst[row * dstCols + col] = src[srcRow * srcCols + srcCol];
+    }
+  }
+  return dst;
+}
+
+/**
+ * Scale spawn points from one grid to another. For each spawn, finds the
+ * source cell, computes the center of the destination cell range that maps
+ * back to that source cell, and places the spawn at the pixel center.
+ */
+function scaleSpawnPoints(
+  spawns: { x: number; y: number }[],
+  srcCols: number, srcRows: number, srcCellSize: number,
+  dstCols: number, dstRows: number, dstCellSize: number,
+): { x: number; y: number }[] {
+  return spawns.map(sp => {
+    const srcCol = Math.floor(sp.x / srcCellSize);
+    const srcRow = Math.floor(sp.y / srcCellSize);
+    const dstColStart = Math.ceil(srcCol * dstCols / srcCols);
+    const dstColEnd = Math.ceil((srcCol + 1) * dstCols / srcCols) - 1;
+    const dstCol = Math.floor((dstColStart + dstColEnd) / 2);
+    const dstRowStart = Math.ceil(srcRow * dstRows / srcRows);
+    const dstRowEnd = Math.ceil((srcRow + 1) * dstRows / srcRows) - 1;
+    const dstRow = Math.floor((dstRowStart + dstRowEnd) / 2);
+    return {
+      x: dstCol * dstCellSize + Math.floor(dstCellSize / 2),
+      y: dstRow * dstCellSize + Math.floor(dstCellSize / 2),
+    };
+  });
+}
+
 // ---------------------------------------------------------------------------
-// MAP: Arena (20x15) — the original
+// MAP: Arena (80x60) — solid border, empty interior
 // ---------------------------------------------------------------------------
 
-/** Reproduce the current procedural arena layout as static data. */
 function generateArenaCells(): TileType[] {
-  const cols = 20;
-  const rows = 15;
+  const cols = 80;
+  const rows = 60;
   const cells: TileType[] = [];
 
   for (let row = 0; row < rows; row++) {
@@ -52,17 +95,17 @@ function generateArenaCells(): TileType[] {
 export const MAP_ARENA: MapDef = {
   id: "arena",
   name: "Arena",
-  cols: 20,
-  rows: 15,
-  cellSize: 48,
+  cols: 80,
+  rows: 60,
+  cellSize: 12,
   spawnPoints: [
-    { x: 96, y: 48 },    // top-left
-    { x: 480, y: 48 },   // top-center
-    { x: 864, y: 48 },   // top-right
-    { x: 48, y: 360 },   // mid-left
-    { x: 912, y: 360 },  // mid-right
-    { x: 192, y: 672 },  // bottom-left
-    { x: 768, y: 672 },  // bottom-right
+    { x: 102, y: 54 },    // (8,4) top-left
+    { x: 486, y: 54 },    // (40,4) top-center
+    { x: 870, y: 54 },    // (72,4) top-right
+    { x: 54, y: 366 },    // (4,30) mid-left
+    { x: 918, y: 366 },   // (76,30) mid-right
+    { x: 102, y: 678 },   // (8,56) bottom-left
+    { x: 870, y: 678 },   // (72,56) bottom-right
   ],
   cells: generateArenaCells(),
   colors: {
@@ -75,36 +118,41 @@ export const MAP_ARENA: MapDef = {
 };
 
 // ---------------------------------------------------------------------------
-// MAP: Bunker (16x12) — compact, corridors + rooms
+// MAP: Bunker (scaled 16x12 → 80x60, 5x)
 // ---------------------------------------------------------------------------
+
+const BUNKER_SRC = parseLayout([
+  "################",
+  "#..............#",
+  "#.##.XX..XX.##.#",
+  "#..............#",
+  "#.XX.##..##.XX.#",
+  "#......XX......#",
+  "#......XX......#",
+  "#.XX.##..##.XX.#",
+  "#..............#",
+  "#.##.XX..XX.##.#",
+  "#..............#",
+  "################",
+].join(""), 16);
 
 export const MAP_BUNKER: MapDef = {
   id: "bunker",
   name: "Bunker",
-  cols: 16,
-  rows: 12,
-  cellSize: 48,
-  spawnPoints: [
-    { x: 384, y: 72 },   // top-center
-    { x: 72, y: 288 },   // mid-left
-    { x: 696, y: 288 },  // mid-right
-    { x: 168, y: 504 },  // bottom-left
-    { x: 600, y: 504 },  // bottom-right
-  ],
-  cells: parseLayout([
-    "################",
-    "#..............#",
-    "#.##.XX..XX.##.#",
-    "#..............#",
-    "#.XX.##..##.XX.#",
-    "#......XX......#",
-    "#......XX......#",
-    "#.XX.##..##.XX.#",
-    "#..............#",
-    "#.##.XX..XX.##.#",
-    "#..............#",
-    "################",
-  ].join(""), 16),
+  cols: 80,
+  rows: 60,
+  cellSize: 12,
+  spawnPoints: scaleSpawnPoints(
+    [
+      { x: 384, y: 72 },   // top-center
+      { x: 72, y: 288 },   // mid-left
+      { x: 696, y: 288 },  // mid-right
+      { x: 168, y: 504 },  // bottom-left
+      { x: 600, y: 504 },  // bottom-right
+    ],
+    16, 12, 48, 80, 60, 12,
+  ),
+  cells: scaleLayout(BUNKER_SRC, 16, 12, 80, 60),
   colors: {
     background: 0x0e1a0e,
     solid: 0x2d4a2d,
@@ -115,44 +163,49 @@ export const MAP_BUNKER: MapDef = {
 };
 
 // ---------------------------------------------------------------------------
-// MAP: Crucible (24x18) — cellSize 40, open + massive breakable center
+// MAP: Crucible (scaled 24x18 → 80x60, ~3.33x)
 // ---------------------------------------------------------------------------
+
+const CRUCIBLE_SRC = parseLayout([
+  "########################",
+  "#......................#",
+  "#..####..........####..#",
+  "#..#XX#..........#XX#..#",
+  "#..####..........####..#",
+  "#......................#",
+  "#......................#",
+  "#.....XXXXXXXXXXXX.....#",
+  "#.....XXXXXXXXXXXX.....#",
+  "#.....XXXXXXXXXXXX.....#",
+  "#.....XXXXXXXXXXXX.....#",
+  "#......................#",
+  "#......................#",
+  "#..####..........####..#",
+  "#..#XX#..........#XX#..#",
+  "#..####..........####..#",
+  "#......................#",
+  "########################",
+].join(""), 24);
 
 export const MAP_CRUCIBLE: MapDef = {
   id: "crucible",
   name: "Crucible",
-  cols: 24,
-  rows: 18,
-  cellSize: 40,
-  spawnPoints: [
-    { x: 60, y: 60 },     // (1,1) top-left
-    { x: 500, y: 60 },    // (12,1) top-center
-    { x: 900, y: 60 },    // (22,1) top-right
-    { x: 60, y: 380 },    // (1,9) mid-left
-    { x: 900, y: 380 },   // (22,9) mid-right
-    { x: 220, y: 660 },   // (5,16) bottom-left
-    { x: 740, y: 660 },   // (18,16) bottom-right
-  ],
-  cells: parseLayout([
-    "########################",
-    "#......................#",
-    "#..####..........####..#",
-    "#..#XX#..........#XX#..#",
-    "#..####..........####..#",
-    "#......................#",
-    "#......................#",
-    "#.....XXXXXXXXXXXX.....#",
-    "#.....XXXXXXXXXXXX.....#",
-    "#.....XXXXXXXXXXXX.....#",
-    "#.....XXXXXXXXXXXX.....#",
-    "#......................#",
-    "#......................#",
-    "#..####..........####..#",
-    "#..#XX#..........#XX#..#",
-    "#..####..........####..#",
-    "#......................#",
-    "########################",
-  ].join(""), 24),
+  cols: 80,
+  rows: 60,
+  cellSize: 12,
+  spawnPoints: scaleSpawnPoints(
+    [
+      { x: 60, y: 60 },     // (1,1) top-left
+      { x: 500, y: 60 },    // (12,1) top-center
+      { x: 900, y: 60 },    // (22,1) top-right
+      { x: 60, y: 380 },    // (1,9) mid-left
+      { x: 900, y: 380 },   // (22,9) mid-right
+      { x: 220, y: 660 },   // (5,16) bottom-left
+      { x: 740, y: 660 },   // (18,16) bottom-right
+    ],
+    24, 18, 40, 80, 60, 12,
+  ),
+  cells: scaleLayout(CRUCIBLE_SRC, 24, 18, 80, 60),
   colors: {
     background: 0x1a0e0e,
     solid: 0x4a2d2d,
@@ -163,48 +216,53 @@ export const MAP_CRUCIBLE: MapDef = {
 };
 
 // ---------------------------------------------------------------------------
-// MAP: Gridlock (30x22) — cellSize 32, symmetric corridors + cover grid
+// MAP: Gridlock (scaled 30x22 → 80x60, ~2.7x)
 // ---------------------------------------------------------------------------
+
+const GRIDLOCK_SRC = parseLayout([
+  "##############################",
+  "#............................#",
+  "#..####................####..#",
+  "#..#XX#................#XX#..#",
+  "#..####................####..#",
+  "#............................#",
+  "#............................#",
+  "#.........XXXX..XXXX.........#",
+  "#.........XXXX..XXXX.........#",
+  "#............................#",
+  "#.....##.....XXXX.....##.....#",
+  "#.....##.....XXXX.....##.....#",
+  "#............................#",
+  "#.........XXXX..XXXX.........#",
+  "#.........XXXX..XXXX.........#",
+  "#............................#",
+  "#............................#",
+  "#..####................####..#",
+  "#..#XX#................#XX#..#",
+  "#..####................####..#",
+  "#............................#",
+  "##############################",
+].join(""), 30);
 
 export const MAP_GRIDLOCK: MapDef = {
   id: "gridlock",
   name: "Gridlock",
-  cols: 30,
-  rows: 22,
-  cellSize: 32,
-  spawnPoints: [
-    { x: 48, y: 48 },     // (1,1) top-left
-    { x: 464, y: 48 },    // (14,1) top-center
-    { x: 912, y: 48 },    // (28,1) top-right
-    { x: 48, y: 336 },    // (1,10) mid-left
-    { x: 912, y: 336 },   // (28,10) mid-right
-    { x: 144, y: 656 },   // (4,20) bottom-left
-    { x: 816, y: 656 },   // (25,20) bottom-right
-  ],
-  cells: parseLayout([
-    "##############################",
-    "#............................#",
-    "#..####................####..#",
-    "#..#XX#................#XX#..#",
-    "#..####................####..#",
-    "#............................#",
-    "#............................#",
-    "#.........XXXX..XXXX.........#",
-    "#.........XXXX..XXXX.........#",
-    "#............................#",
-    "#.....##.....XXXX.....##.....#",
-    "#.....##.....XXXX.....##.....#",
-    "#............................#",
-    "#.........XXXX..XXXX.........#",
-    "#.........XXXX..XXXX.........#",
-    "#............................#",
-    "#............................#",
-    "#..####................####..#",
-    "#..#XX#................#XX#..#",
-    "#..####................####..#",
-    "#............................#",
-    "##############################",
-  ].join(""), 30),
+  cols: 80,
+  rows: 60,
+  cellSize: 12,
+  spawnPoints: scaleSpawnPoints(
+    [
+      { x: 48, y: 48 },     // (1,1) top-left
+      { x: 464, y: 48 },    // (14,1) top-center
+      { x: 912, y: 48 },    // (28,1) top-right
+      { x: 48, y: 336 },    // (1,10) mid-left
+      { x: 912, y: 336 },   // (28,10) mid-right
+      { x: 144, y: 656 },   // (4,20) bottom-left
+      { x: 816, y: 656 },   // (25,20) bottom-right
+    ],
+    30, 22, 32, 80, 60, 12,
+  ),
+  cells: scaleLayout(GRIDLOCK_SRC, 30, 22, 80, 60),
   colors: {
     background: 0x0a0a1e,
     solid: 0x1a3a5c,
@@ -215,10 +273,10 @@ export const MAP_GRIDLOCK: MapDef = {
 };
 
 // ---------------------------------------------------------------------------
-// MAP: Labyrinth (40x30) — cellSize 24, room grid with corridors
+// MAP: Labyrinth (generated 40x30, scaled 2x → 80x60)
 // ---------------------------------------------------------------------------
 
-function generateLabyrinthCells(): TileType[] {
+function generateLabyrinthBase(): TileType[] {
   const cols = 40;
   const rows = 30;
   const cells: TileType[] = [];
@@ -269,19 +327,22 @@ function generateLabyrinthCells(): TileType[] {
 export const MAP_LABYRINTH: MapDef = {
   id: "labyrinth",
   name: "Labyrinth",
-  cols: 40,
-  rows: 30,
-  cellSize: 24,
-  spawnPoints: [
-    { x: 84, y: 84 },     // (3,3) top-left room
-    { x: 468, y: 84 },    // (19,3) top-center
-    { x: 852, y: 84 },    // (35,3) top-right room
-    { x: 84, y: 372 },    // (3,15) mid-left room
-    { x: 804, y: 372 },   // (33,15) mid-right room
-    { x: 84, y: 660 },    // (3,27) bottom-left room
-    { x: 852, y: 660 },   // (35,27) bottom-right room
-  ],
-  cells: generateLabyrinthCells(),
+  cols: 80,
+  rows: 60,
+  cellSize: 12,
+  spawnPoints: scaleSpawnPoints(
+    [
+      { x: 84, y: 84 },     // (3,3) top-left room
+      { x: 468, y: 84 },    // (19,3) top-center
+      { x: 852, y: 84 },    // (35,3) top-right room
+      { x: 84, y: 372 },    // (3,15) mid-left room
+      { x: 804, y: 372 },   // (33,15) mid-right room
+      { x: 84, y: 660 },    // (3,27) bottom-left room
+      { x: 852, y: 660 },   // (35,27) bottom-right room
+    ],
+    40, 30, 24, 80, 60, 12,
+  ),
+  cells: scaleLayout(generateLabyrinthBase(), 40, 30, 80, 60),
   colors: {
     background: 0x1a1a16,
     solid: 0x4a4a3a,

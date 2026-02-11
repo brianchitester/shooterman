@@ -31,13 +31,13 @@ describe("MapDef registry", () => {
 
 describe("MAP_ARENA", () => {
   it("has correct dimensions", () => {
-    expect(MAP_ARENA.cols).toBe(20);
-    expect(MAP_ARENA.rows).toBe(15);
-    expect(MAP_ARENA.cellSize).toBe(48);
+    expect(MAP_ARENA.cols).toBe(80);
+    expect(MAP_ARENA.rows).toBe(60);
+    expect(MAP_ARENA.cellSize).toBe(12);
   });
 
   it("has cells array of correct length", () => {
-    expect(MAP_ARENA.cells.length).toBe(20 * 15);
+    expect(MAP_ARENA.cells.length).toBe(80 * 60);
   });
 
   it("has 7 spawn points", () => {
@@ -45,18 +45,19 @@ describe("MAP_ARENA", () => {
   });
 
   it("border cells are solid", () => {
+    const { cols, rows, cells } = MAP_ARENA;
     // Top row
-    for (let col = 0; col < 20; col++) {
-      expect(MAP_ARENA.cells[col]).toBe("solid");
+    for (let col = 0; col < cols; col++) {
+      expect(cells[col]).toBe("solid");
     }
     // Bottom row
-    for (let col = 0; col < 20; col++) {
-      expect(MAP_ARENA.cells[14 * 20 + col]).toBe("solid");
+    for (let col = 0; col < cols; col++) {
+      expect(cells[(rows - 1) * cols + col]).toBe("solid");
     }
     // Left/right edges
-    for (let row = 0; row < 15; row++) {
-      expect(MAP_ARENA.cells[row * 20]).toBe("solid");
-      expect(MAP_ARENA.cells[row * 20 + 19]).toBe("solid");
+    for (let row = 0; row < rows; row++) {
+      expect(cells[row * cols]).toBe("solid");
+      expect(cells[row * cols + cols - 1]).toBe("solid");
     }
   });
 
@@ -80,10 +81,10 @@ describe("MAP_ARENA", () => {
 describe("createGameState with MapDef", () => {
   it("builds correct TileGrid from MAP_ARENA", () => {
     const state = createGameState("coop", 2, 42, MAP_ARENA);
-    expect(state.tiles.width).toBe(20);
-    expect(state.tiles.height).toBe(15);
-    expect(state.tiles.cellSize).toBe(48);
-    expect(state.tiles.cells.length).toBe(300);
+    expect(state.tiles.width).toBe(80);
+    expect(state.tiles.height).toBe(60);
+    expect(state.tiles.cellSize).toBe(12);
+    expect(state.tiles.cells.length).toBe(4800);
     expect(state.tiles.spawnPoints.length).toBe(7);
   });
 
@@ -127,13 +128,13 @@ describe("createGameState with MapDef", () => {
 
 describe("MAP_BUNKER", () => {
   it("has correct dimensions", () => {
-    expect(MAP_BUNKER.cols).toBe(16);
-    expect(MAP_BUNKER.rows).toBe(12);
-    expect(MAP_BUNKER.cellSize).toBe(48);
+    expect(MAP_BUNKER.cols).toBe(80);
+    expect(MAP_BUNKER.rows).toBe(60);
+    expect(MAP_BUNKER.cellSize).toBe(12);
   });
 
   it("has cells array of correct length", () => {
-    expect(MAP_BUNKER.cells.length).toBe(16 * 12);
+    expect(MAP_BUNKER.cells.length).toBe(80 * 60);
   });
 
   it("has at least 5 spawn points", () => {
@@ -184,10 +185,10 @@ describe("MAP_LIST registry", () => {
 describe("createGameState with MAP_BUNKER", () => {
   it("builds correct TileGrid", () => {
     const state = createGameState("coop", 2, 42, MAP_BUNKER);
-    expect(state.tiles.width).toBe(16);
-    expect(state.tiles.height).toBe(12);
-    expect(state.tiles.cellSize).toBe(48);
-    expect(state.tiles.cells.length).toBe(192);
+    expect(state.tiles.width).toBe(80);
+    expect(state.tiles.height).toBe(60);
+    expect(state.tiles.cellSize).toBe(12);
+    expect(state.tiles.cells.length).toBe(4800);
     expect(state.match.mapId).toBe("bunker");
   });
 

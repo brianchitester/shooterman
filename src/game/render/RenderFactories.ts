@@ -119,8 +119,8 @@ export function drawTiles(g: Phaser.GameObjects.Graphics, tiles: TileGrid, color
           g.lineStyle(1, colors.crack, 0.6);
           const x = col * cs;
           const y = row * cs;
-          g.lineBetween(x + 8, y + 4, x + cs - 12, y + cs - 8);
-          g.lineBetween(x + cs - 10, y + 10, x + 6, y + cs - 6);
+          g.lineBetween(x + cs * 0.17, y + cs * 0.08, x + cs * 0.75, y + cs * 0.83);
+          g.lineBetween(x + cs * 0.79, y + cs * 0.21, x + cs * 0.13, y + cs * 0.88);
         }
       }
     }
