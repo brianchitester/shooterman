@@ -9,6 +9,22 @@ import type { EnemyDef } from "../../defs/EnemyDef";
 import { ENEMY_LIST } from "../../defs/enemies";
 import { initEnemyFromDef } from "./initEnemy";
 
+// Pre-allocated flat arrays for edge cell coordinates: [x0, y0, x1, y1, ...]
+// Max possible cells per edge = width * height (generous upper bound, allocated once)
+const MAX_EDGE_CELLS = 80 * 60; // fits any map up to 80x60
+const edgeCellFlat: number[][] = [
+  new Array(MAX_EDGE_CELLS * 2),
+  new Array(MAX_EDGE_CELLS * 2),
+  new Array(MAX_EDGE_CELLS * 2),
+  new Array(MAX_EDGE_CELLS * 2),
+];
+const edgeCellCount: number[] = [0, 0, 0, 0];
+
+// Pre-allocated edge ordering arrays (max 4 edges)
+const edgeOrderIdx: number[] = [0, 0, 0, 0];
+const edgeOrderDist: number[] = [0, 0, 0, 0];
+let edgeOrderCount = 0;
+
 // Only spawn enemies in co-op (PvP has no enemies)
 export function spawnSystem(state: GameState, dt: number, rng: SeededRng, events: EventBus): void {
   if (state.match.mode !== "coop") return;
@@ -30,9 +46,11 @@ export function spawnSystem(state: GameState, dt: number, rng: SeededRng, events
   const h = state.tiles.height;
   const band = Math.max(3, Math.ceil(h * 0.1)); // ~10% of map depth, min 3 rows/cols
 
-  // 4 edge bands: top, bottom, left, right
-  // Each band collects empty cell centers as candidate spawn positions
-  const edgeCells: { x: number; y: number }[][] = [[], [], [], []];
+  // Reset edge cell counts
+  edgeCellCount[0] = 0;
+  edgeCellCount[1] = 0;
+  edgeCellCount[2] = 0;
+  edgeCellCount[3] = 0;
 
   for (let row = 1; row < h - 1; row++) {
     for (let col = 1; col < w - 1; col++) {
@@ -40,42 +58,82 @@ export function spawnSystem(state: GameState, dt: number, rng: SeededRng, events
       if (tile.type !== "empty") continue;
       const px = col * cs + cs / 2;
       const py = row * cs + cs / 2;
-      if (row < band) edgeCells[0].push({ x: px, y: py });             // top
-      if (row >= h - band) edgeCells[1].push({ x: px, y: py });        // bottom
-      if (col < band) edgeCells[2].push({ x: px, y: py });             // left
-      if (col >= w - band) edgeCells[3].push({ x: px, y: py });        // right
+      if (row < band) {
+        const c = edgeCellCount[0];
+        edgeCellFlat[0][c * 2] = px;
+        edgeCellFlat[0][c * 2 + 1] = py;
+        edgeCellCount[0] = c + 1;
+      }
+      if (row >= h - band) {
+        const c = edgeCellCount[1];
+        edgeCellFlat[1][c * 2] = px;
+        edgeCellFlat[1][c * 2 + 1] = py;
+        edgeCellCount[1] = c + 1;
+      }
+      if (col < band) {
+        const c = edgeCellCount[2];
+        edgeCellFlat[2][c * 2] = px;
+        edgeCellFlat[2][c * 2 + 1] = py;
+        edgeCellCount[2] = c + 1;
+      }
+      if (col >= w - band) {
+        const c = edgeCellCount[3];
+        edgeCellFlat[3][c * 2] = px;
+        edgeCellFlat[3][c * 2 + 1] = py;
+        edgeCellCount[3] = c + 1;
+      }
     }
   }
 
   // Rank edges by distance from nearest player (farthest first), skip empty edges
-  const edgeOrder: { idx: number; minDist: number }[] = [];
+  edgeOrderCount = 0;
   for (let e = 0; e < 4; e++) {
-    if (edgeCells[e].length === 0) continue;
+    const count = edgeCellCount[e];
+    if (count === 0) continue;
     // Use edge midpoint for distance ranking
-    const mid = edgeCells[e][(edgeCells[e].length / 2) | 0];
+    const midIdx = (count / 2) | 0;
+    const midX = edgeCellFlat[e][midIdx * 2];
+    const midY = edgeCellFlat[e][midIdx * 2 + 1];
     let minPlayerDist = Infinity;
     for (let p = 0; p < state.players.length; p++) {
       if (!state.players[p].alive) continue;
-      const dx = mid.x - state.players[p].pos.x;
-      const dy = mid.y - state.players[p].pos.y;
+      const dx = midX - state.players[p].pos.x;
+      const dy = midY - state.players[p].pos.y;
       const d = dx * dx + dy * dy;
       if (d < minPlayerDist) minPlayerDist = d;
     }
-    edgeOrder.push({ idx: e, minDist: minPlayerDist });
+    // Insertion sort (<=4 elements) — descending by distance
+    let insertAt = edgeOrderCount;
+    for (let j = 0; j < edgeOrderCount; j++) {
+      if (minPlayerDist > edgeOrderDist[j]) {
+        insertAt = j;
+        break;
+      }
+    }
+    // Shift elements right
+    for (let j = edgeOrderCount; j > insertAt; j--) {
+      edgeOrderIdx[j] = edgeOrderIdx[j - 1];
+      edgeOrderDist[j] = edgeOrderDist[j - 1];
+    }
+    edgeOrderIdx[insertAt] = e;
+    edgeOrderDist[insertAt] = minPlayerDist;
+    edgeOrderCount++;
   }
-  if (edgeOrder.length === 0) return; // No valid edge cells at all
-  edgeOrder.sort((a, b) => b.minDist - a.minDist);
+  if (edgeOrderCount === 0) return; // No valid edge cells at all
 
   // From the best edge, pick a random empty cell
-  const bestEdge = edgeCells[edgeOrder[0].idx];
-  const spawnPos = bestEdge[rng.nextInt(0, bestEdge.length - 1)];
+  const bestEdge = edgeOrderIdx[0];
+  const bestCount = edgeCellCount[bestEdge];
+  const slot2 = rng.nextInt(0, bestCount - 1);
+  const spawnX = edgeCellFlat[bestEdge][slot2 * 2];
+  const spawnY = edgeCellFlat[bestEdge][slot2 * 2 + 1];
 
   // Safety distance check
   const safeDistSq = SPAWN_SAFETY_DISTANCE * SPAWN_SAFETY_DISTANCE;
   for (let p = 0; p < state.players.length; p++) {
     if (!state.players[p].alive) continue;
-    const dx = spawnPos.x - state.players[p].pos.x;
-    const dy = spawnPos.y - state.players[p].pos.y;
+    const dx = spawnX - state.players[p].pos.x;
+    const dy = spawnY - state.players[p].pos.y;
     if (dx * dx + dy * dy < safeDistSq) return; // Too close, skip this spawn
   }
 
@@ -91,14 +149,14 @@ export function spawnSystem(state: GameState, dt: number, rng: SeededRng, events
 
   // Build weighted spawn pool from eligible enemy types
   const def = pickEnemyDef(state.match.tick, rng);
-  initEnemyFromDef(state.enemies[slot], def, spawnPos.x, spawnPos.y, state);
+  initEnemyFromDef(state.enemies[slot], def, spawnX, spawnY, state);
 
   state.match.spawnCount++;
 
   events.emit({
     type: "enemy_spawned",
     enemyId: state.enemies[slot].id,
-    pos: { x: spawnPos.x, y: spawnPos.y },
+    pos: { x: spawnX, y: spawnY },
   });
 }
 

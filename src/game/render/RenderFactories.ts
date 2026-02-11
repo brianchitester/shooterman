@@ -2,7 +2,6 @@ import Phaser from "phaser";
 import type { TileGrid } from "../../core/state/Types";
 import type { MapColorScheme } from "../../core/defs/MapDef";
 import type { EnemyDef } from "../../core/defs/EnemyDef";
-import { DEFAULT_MAP_COLORS } from "../../core/defs/maps";
 import { PLAYER_RADIUS } from "../../core/state/Defaults";
 
 export const PLAYER_COLORS: readonly number[] = [
@@ -100,7 +99,7 @@ export function createTileGraphics(scene: Phaser.Scene): Phaser.GameObjects.Grap
   return g;
 }
 
-export function drawTiles(g: Phaser.GameObjects.Graphics, tiles: TileGrid, colors: MapColorScheme = DEFAULT_MAP_COLORS): void {
+export function drawTiles(g: Phaser.GameObjects.Graphics, tiles: TileGrid, colors: MapColorScheme): void {
   g.clear();
   const cs = tiles.cellSize;
   for (let row = 0; row < tiles.height; row++) {

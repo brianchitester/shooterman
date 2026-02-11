@@ -51,11 +51,7 @@ export const strafeShootBehavior: EnemyBehavior = {
     enemy.pos.x += enemy.vel.x * dt;
     enemy.pos.y += enemy.vel.y * dt;
 
-    const resolved = resolveCircleTile(
-      enemy.pos.x, enemy.pos.y, enemy.colliderRadius, state.tiles,
-    );
-    enemy.pos.x = resolved.x;
-    enemy.pos.y = resolved.y;
+    resolveCircleTile(enemy.pos.x, enemy.pos.y, enemy.colliderRadius, state.tiles, enemy.pos);
 
     // Fire cooldown
     if (enemy.fireCooldown > 0) {

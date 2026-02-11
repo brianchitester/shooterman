@@ -16,7 +16,6 @@ import {
 import { REVIVE_HOLD_TIME } from "../../core/state/Defaults";
 import type { MapColorScheme } from "../../core/defs/MapDef";
 import { getMapDef } from "../../core/defs/maps";
-import { DEFAULT_MAP_COLORS } from "../../core/defs/maps";
 import { getEnemyDef, ENEMY_CHASER } from "../../core/defs/enemies";
 
 interface FlashEffect {
@@ -40,7 +39,7 @@ export class RenderWorld {
   private enemyGfx: Phaser.GameObjects.Graphics[] = [];
   private enemyTypeCache: string[] = []; // track typeId to know when to redraw
   private tileGfx!: Phaser.GameObjects.Graphics;
-  private colors: MapColorScheme = DEFAULT_MAP_COLORS;
+  private colors!: MapColorScheme;
   private tilesDirty = true;
   private flashPool: FlashEffect[] = [];
   private flashGfx!: Phaser.GameObjects.Graphics;
@@ -48,7 +47,7 @@ export class RenderWorld {
   create(scene: Phaser.Scene, state: GameState): void {
     // Resolve per-map color scheme
     const mapDef = getMapDef(state.match.mapId);
-    this.colors = mapDef.colors ?? DEFAULT_MAP_COLORS;
+    this.colors = mapDef.colors;
 
     // Viewport fill — covers margins for maps smaller than the canvas
     const vpBg = scene.add.graphics();

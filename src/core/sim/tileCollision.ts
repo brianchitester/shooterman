@@ -1,16 +1,17 @@
-import type { TileGrid } from "../state/Types";
+import type { TileGrid, Vec2 } from "../state/Types";
 
 /**
  * Resolves a circle entity against solid/breakable tiles.
  * Pushes the entity out of any overlapping non-empty tiles.
- * Mutates posX/posY and returns the resolved position.
+ * Writes resolved position into `out` and returns it.
  */
 export function resolveCircleTile(
   posX: number,
   posY: number,
   radius: number,
   tiles: TileGrid,
-): { x: number; y: number } {
+  out: Vec2,
+): Vec2 {
   const cs = tiles.cellSize;
 
   // Check all cells the entity could overlap
@@ -59,5 +60,7 @@ export function resolveCircleTile(
     }
   }
 
-  return { x: posX, y: posY };
+  out.x = posX;
+  out.y = posY;
+  return out;
 }

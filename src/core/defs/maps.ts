@@ -1,13 +1,5 @@
-import type { MapDef, MapColorScheme } from "./MapDef";
+import type { MapDef } from "./MapDef";
 import type { TileType } from "../state/Types";
-
-export const DEFAULT_MAP_COLORS: MapColorScheme = {
-  background: 0x1a1a2e,
-  solid: 0x444444,
-  breakable: 0x8b6914,
-  breakableDamaged: 0x5c470e,
-  crack: 0x3a2f0a,
-};
 
 /**
  * Parse a visual ASCII layout into a TileType array.

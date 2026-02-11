@@ -10,6 +10,7 @@ import type { SeededRng } from "../../core/sim/rng/seedRng";
 import type { EventBus } from "../../core/events/EventBus";
 import { RenderWorld } from "../render/RenderWorld";
 import { HUD } from "../render/HUD";
+import { DevHotkeys } from "../debug/DevHotkeys";
 import { InputManager } from "../input/InputManager";
 import { createPrevPositions, snapshotPositions } from "../render/PrevPositions";
 import type { PrevPositions } from "../render/PrevPositions";
@@ -36,6 +37,7 @@ export class MatchScene extends Phaser.Scene {
   private matchWeaponId = "auto";
   private accumulator = 0;
   private gameOverLaunched = false;
+  private devHotkeys: DevHotkeys | null = null;
 
   constructor() {
     super({ key: "MatchScene" });
@@ -77,6 +79,10 @@ export class MatchScene extends Phaser.Scene {
 
     this.renderWorld.create(this, this.state);
     this.hud.create(this);
+
+    if (import.meta.env.DEV) {
+      this.devHotkeys = new DevHotkeys(this);
+    }
 
     // Pause on Escape or gamepad Start
     const launchPause = () => {
@@ -125,6 +131,9 @@ export class MatchScene extends Phaser.Scene {
 
     // Interpolation alpha
     const alpha = this.accumulator / DT;
+
+    // Dev hotkeys (after sim, before drain so debug events get included)
+    this.devHotkeys?.update(this.state, this.rng, this.eventBus);
 
     // Drain events so render can consume them for VFX / dirty-flag
     const events = this.eventBus.drain();

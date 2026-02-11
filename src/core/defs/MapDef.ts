@@ -16,5 +16,5 @@ export interface MapDef {
   cellSize: number;
   spawnPoints: ReadonlyArray<{ x: number; y: number }>;
   cells: ReadonlyArray<TileType>;  // row-major, length = cols * rows
-  colors?: MapColorScheme;
+  colors: MapColorScheme;
 }

@@ -7,22 +7,26 @@ export interface EventBus {
 }
 
 export function createEventBus(): EventBus {
-  const buffer: GameEvent[] = [];
+  let writeBuffer: GameEvent[] = [];
+  let readBuffer: GameEvent[] = [];
+  let writeIndex = 0;
 
   function emit(event: GameEvent): void {
-    buffer[buffer.length] = event;
+    writeBuffer[writeIndex++] = event;
   }
 
   function drain(): GameEvent[] {
-    // Return the current buffer and reset
-    // Caller is expected to consume before next tick batch
-    const result = buffer.slice();
-    buffer.length = 0;
-    return result;
+    // Swap buffers — returned array valid until next drain()
+    const out = writeBuffer;
+    out.length = writeIndex;
+    writeBuffer = readBuffer;
+    readBuffer = out;
+    writeIndex = 0;
+    return out;
   }
 
   function clear(): void {
-    buffer.length = 0;
+    writeIndex = 0;
   }
 
   return { emit, drain, clear };

@@ -15,11 +15,7 @@ export function movementSystem(state: GameState, dt: number): void {
     player.pos.y += player.vel.y * dt;
 
     // Resolve tile collisions (solid + breakable)
-    const resolved = resolveCircleTile(
-      player.pos.x, player.pos.y, PLAYER_RADIUS, state.tiles,
-    );
-    player.pos.x = resolved.x;
-    player.pos.y = resolved.y;
+    resolveCircleTile(player.pos.x, player.pos.y, PLAYER_RADIUS, state.tiles, player.pos);
 
     // Clamp to arena bounds (inside the border tiles)
     const minX = cellSize;

@@ -32,11 +32,7 @@ export const spinChaseBehavior: EnemyBehavior = {
     enemy.pos.x += enemy.vel.x * dt;
     enemy.pos.y += enemy.vel.y * dt;
 
-    const resolved = resolveCircleTile(
-      enemy.pos.x, enemy.pos.y, enemy.colliderRadius, state.tiles,
-    );
-    enemy.pos.x = resolved.x;
-    enemy.pos.y = resolved.y;
+    resolveCircleTile(enemy.pos.x, enemy.pos.y, enemy.colliderRadius, state.tiles, enemy.pos);
 
     // --- Spinning fire ---
     enemy.spinAngle += SPIN_SPEED * dt;
