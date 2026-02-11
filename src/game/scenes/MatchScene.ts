@@ -126,15 +126,12 @@ export class MatchScene extends Phaser.Scene {
     // Interpolation alpha
     const alpha = this.accumulator / DT;
 
-    // Render
-    this.renderWorld.update(this.state, this.prev, alpha);
-    this.hud.update(this.state);
+    // Drain events so render can consume them for VFX / dirty-flag
+    const events = this.eventBus.drain();
 
-    // Drain events (log count for now)
-    const evts = this.eventBus.drain();
-    if (evts.length > 0) {
-      console.log(`[MatchScene] ${evts.length} events this frame`);
-    }
+    // Render
+    this.renderWorld.update(this.state, this.prev, alpha, events);
+    this.hud.update(this.state);
 
     // Launch game over overlay once
     if (this.state.match.gameOver && !this.gameOverLaunched) {

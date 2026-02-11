@@ -1,7 +1,6 @@
 import type { GameState } from "../../state/Types";
 import { resolveCircleTile } from "../tileCollision";
-
-const PLAYER_COLLIDER_RADIUS = 14;
+import { PLAYER_RADIUS } from "../../state/Defaults";
 
 export function movementSystem(state: GameState, dt: number): void {
   const cellSize = state.tiles.cellSize;
@@ -17,7 +16,7 @@ export function movementSystem(state: GameState, dt: number): void {
 
     // Resolve tile collisions (solid + breakable)
     const resolved = resolveCircleTile(
-      player.pos.x, player.pos.y, PLAYER_COLLIDER_RADIUS, state.tiles,
+      player.pos.x, player.pos.y, PLAYER_RADIUS, state.tiles,
     );
     player.pos.x = resolved.x;
     player.pos.y = resolved.y;

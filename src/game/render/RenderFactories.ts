@@ -3,6 +3,7 @@ import type { TileGrid } from "../../core/state/Types";
 import type { MapColorScheme } from "../../core/defs/MapDef";
 import type { EnemyDef } from "../../core/defs/EnemyDef";
 import { DEFAULT_MAP_COLORS } from "../../core/defs/maps";
+import { PLAYER_RADIUS } from "../../core/state/Defaults";
 
 export const PLAYER_COLORS: readonly number[] = [
   0xe74c3c, // Red
@@ -13,8 +14,6 @@ export const PLAYER_COLORS: readonly number[] = [
   0xe67e22, // Orange
   0x1abc9c, // Cyan
 ];
-
-const PLAYER_RADIUS = 14;  // 28px diameter
 const BULLET_RADIUS = 3;   // 6px diameter
 
 const BULLET_COLOR = 0xff8c00;

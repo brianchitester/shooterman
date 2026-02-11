@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import type { GameState } from "../../core/state/Types";
+import type { GameEvent } from "../../core/events/Events";
 import { MAX_BULLETS, MAX_ENEMIES, MAX_PLAYERS, ARENA_WIDTH, ARENA_HEIGHT } from "../../core/state/Defaults";
 import type { PrevPositions } from "./PrevPositions";
 import {
@@ -18,6 +19,18 @@ import { getMapDef } from "../../core/defs/maps";
 import { DEFAULT_MAP_COLORS } from "../../core/defs/maps";
 import { getEnemyDef, ENEMY_CHASER } from "../../core/defs/enemies";
 
+interface FlashEffect {
+  x: number;
+  y: number;
+  radius: number;
+  maxTtl: number;
+  ttl: number;
+  color: number;
+  active: boolean;
+}
+
+const FLASH_POOL_SIZE = 32;
+
 export class RenderWorld {
   private playerGfx: Phaser.GameObjects.Graphics[] = [];
   private aimGfx: Phaser.GameObjects.Graphics[] = [];
@@ -28,6 +41,9 @@ export class RenderWorld {
   private enemyTypeCache: string[] = []; // track typeId to know when to redraw
   private tileGfx!: Phaser.GameObjects.Graphics;
   private colors: MapColorScheme = DEFAULT_MAP_COLORS;
+  private tilesDirty = true;
+  private flashPool: FlashEffect[] = [];
+  private flashGfx!: Phaser.GameObjects.Graphics;
 
   create(scene: Phaser.Scene, state: GameState): void {
     // Resolve per-map color scheme
@@ -51,7 +67,7 @@ export class RenderWorld {
 
     // Tile grid
     this.tileGfx = createTileGraphics(scene);
-    drawTiles(this.tileGfx, state.tiles, this.colors);
+    this.tilesDirty = true;
 
     // Player pool
     for (let i = 0; i < MAX_PLAYERS; i++) {
@@ -74,11 +90,56 @@ export class RenderWorld {
       this.enemyGfx[i] = createEnemyGraphic(scene, ENEMY_CHASER);
       this.enemyTypeCache[i] = "";
     }
+
+    // Flash VFX pool
+    for (let i = 0; i < FLASH_POOL_SIZE; i++) {
+      this.flashPool[i] = { x: 0, y: 0, radius: 0, maxTtl: 1, ttl: 0, color: 0, active: false };
+    }
+    this.flashGfx = scene.add.graphics();
+    this.flashGfx.setDepth(10);
   }
 
-  update(state: GameState, prev: PrevPositions, alpha: number): void {
-    // Redraw tile grid (destroyed tiles disappear)
-    drawTiles(this.tileGfx, state.tiles, this.colors);
+  update(state: GameState, prev: PrevPositions, alpha: number, events: GameEvent[] = []): void {
+    // Process events: set dirty flag + spawn VFX flashes
+    for (let i = 0; i < events.length; i++) {
+      const evt = events[i];
+      switch (evt.type) {
+        case "tile_damaged":
+        case "tile_destroyed":
+          this.tilesDirty = true;
+          break;
+      }
+
+      // Spawn flash VFX
+      switch (evt.type) {
+        case "hit_enemy": {
+          const enemy = this.findEnemy(state, evt.enemyId);
+          if (enemy) this.spawnFlash(enemy.pos.x, enemy.pos.y, 8, 6, 0xffffff);
+          break;
+        }
+        case "enemy_killed": {
+          const enemy = this.findEnemy(state, evt.enemyId);
+          if (enemy) this.spawnFlash(enemy.pos.x, enemy.pos.y, 16, 10, 0xff8800);
+          break;
+        }
+        case "tile_destroyed": {
+          const cs = state.tiles.cellSize;
+          this.spawnFlash(evt.col * cs + cs / 2, evt.row * cs + cs / 2, 6, 8, 0xffcc00);
+          break;
+        }
+        case "hit_player": {
+          const player = this.findPlayer(state, evt.playerId);
+          if (player) this.spawnFlash(player.pos.x, player.pos.y, 10, 6, 0xff4444);
+          break;
+        }
+      }
+    }
+
+    // Redraw tile grid only when dirty
+    if (this.tilesDirty) {
+      drawTiles(this.tileGfx, state.tiles, this.colors);
+      this.tilesDirty = false;
+    }
 
     // Players
     for (let i = 0; i < state.players.length; i++) {
@@ -205,5 +266,46 @@ export class RenderWorld {
         }
       }
     }
+
+    // Flash VFX — clear and redraw active flashes
+    this.flashGfx.clear();
+    for (let i = 0; i < FLASH_POOL_SIZE; i++) {
+      const f = this.flashPool[i];
+      if (!f.active) continue;
+      const a = f.ttl / f.maxTtl;
+      this.flashGfx.fillStyle(f.color, a);
+      this.flashGfx.fillCircle(f.x, f.y, f.radius);
+      f.ttl--;
+      if (f.ttl <= 0) f.active = false;
+    }
+  }
+
+  private spawnFlash(x: number, y: number, radius: number, ttl: number, color: number): void {
+    for (let i = 0; i < FLASH_POOL_SIZE; i++) {
+      const f = this.flashPool[i];
+      if (f.active) continue;
+      f.x = x;
+      f.y = y;
+      f.radius = radius;
+      f.maxTtl = ttl;
+      f.ttl = ttl;
+      f.color = color;
+      f.active = true;
+      return;
+    }
+  }
+
+  private findEnemy(state: GameState, id: number): { pos: { x: number; y: number } } | null {
+    for (let i = 0; i < state.enemies.length; i++) {
+      if (state.enemies[i].id === id) return state.enemies[i];
+    }
+    return null;
+  }
+
+  private findPlayer(state: GameState, id: number): { pos: { x: number; y: number } } | null {
+    for (let i = 0; i < state.players.length; i++) {
+      if (state.players[i].id === id) return state.players[i];
+    }
+    return null;
   }
 }

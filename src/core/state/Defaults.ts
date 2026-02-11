@@ -18,7 +18,7 @@ export const PLAYER_MOVE_SPEED = 250; // px/s
 export const DOWNED_CRAWL_SPEED = 75; // px/s (30% of normal)
 
 // Collision radii
-export const PLAYER_RADIUS = 16;
+export const PLAYER_RADIUS = 14;
 // Enemy radius now per-type via EnemyDef.colliderRadius
 export const BULLET_RADIUS = 4;
 
