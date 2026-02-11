@@ -56,10 +56,10 @@ export const ENEMY_SPINNER: EnemyDef = {
   knockback: 16,
   score: 200,
   ranged: {
-    fireRate: 6,             // ticks — fires very frequently (rotating stream)
+    fireRate: 12,            // ticks — steady rotating stream
     bulletSpeed: 250,        // px/s — slower bullets for readability
     bulletDamage: 1,
-    bulletTTL: 75,           // ticks (1.25s)
+    bulletTTL: 37,           // ticks (~0.6s) — short range ring
     preferredRange: 0,       // unused by spin_chase
     weaponId: "enemy_spinner",
   },
