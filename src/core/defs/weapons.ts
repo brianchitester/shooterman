@@ -2,8 +2,8 @@ import type { WeaponDef } from "./WeaponDef";
 
 export const WEAPON_AUTO: WeaponDef = {
   id: "auto",
-  name: "Auto",
-  fireRate: 15,        // ticks (4 shots/sec)
+  name: "Pistol",
+  fireRate: 20,        // ticks (3 shots/sec)
   bulletSpeed: 600,    // px/s
   bulletTTL: 60,       // ticks (1.0s)
   bulletDamage: 1,

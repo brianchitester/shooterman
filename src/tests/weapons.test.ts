@@ -13,7 +13,7 @@ describe("WeaponDef registry", () => {
   it("getWeaponDef('auto') returns WEAPON_AUTO", () => {
     const wep = getWeaponDef("auto");
     expect(wep).toBe(WEAPON_AUTO);
-    expect(wep.fireRate).toBe(15);
+    expect(wep.fireRate).toBe(20);
     expect(wep.bulletSpeed).toBe(600);
     expect(wep.bulletTTL).toBe(60);
     expect(wep.bulletDamage).toBe(1);

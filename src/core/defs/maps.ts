@@ -40,16 +40,6 @@ function generateArenaCells(): TileType[] {
     for (let col = 0; col < cols; col++) {
       if (row === 0 || row === rows - 1 || col === 0 || col === cols - 1) {
         cells.push("solid");
-      } else if (
-        (row % 4 === 2 && col % 4 === 2) &&
-        row > 1 && row < rows - 2 && col > 1 && col < cols - 2
-      ) {
-        cells.push("solid");
-      } else if (
-        (row + col) % 3 === 0 &&
-        row > 1 && row < rows - 2 && col > 1 && col < cols - 2
-      ) {
-        cells.push("breakable");
       } else {
         cells.push("empty");
       }
@@ -381,7 +371,7 @@ export const MAP_FORTRESS: MapDef = {
 // ---------------------------------------------------------------------------
 
 export const MAP_LIST: ReadonlyArray<MapDef> = [
-  MAP_ARENA, MAP_BUNKER, MAP_CRUCIBLE, MAP_GRIDLOCK, MAP_LABYRINTH, MAP_FORTRESS,
+  MAP_FORTRESS, MAP_ARENA, MAP_BUNKER, MAP_CRUCIBLE, MAP_GRIDLOCK, MAP_LABYRINTH,
 ];
 
 export const MAP_REGISTRY: Record<string, MapDef> = {};

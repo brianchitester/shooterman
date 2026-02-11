@@ -60,12 +60,20 @@ describe("MAP_ARENA", () => {
     }
   });
 
-  it("has breakable tiles in interior", () => {
+  it("is a big empty field (solid border only)", () => {
     let breakableCount = 0;
-    for (let i = 0; i < MAP_ARENA.cells.length; i++) {
-      if (MAP_ARENA.cells[i] === "breakable") breakableCount++;
+    let interiorSolidCount = 0;
+    const cols = MAP_ARENA.cols;
+    const rows = MAP_ARENA.rows;
+    for (let row = 1; row < rows - 1; row++) {
+      for (let col = 1; col < cols - 1; col++) {
+        const cell = MAP_ARENA.cells[row * cols + col];
+        if (cell === "breakable") breakableCount++;
+        if (cell === "solid") interiorSolidCount++;
+      }
     }
-    expect(breakableCount).toBeGreaterThan(0);
+    expect(breakableCount).toBe(0);
+    expect(interiorSolidCount).toBe(0);
   });
 });
 

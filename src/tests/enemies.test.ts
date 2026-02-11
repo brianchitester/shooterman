@@ -9,7 +9,7 @@ import {
 } from "../core/state/Defaults";
 import { ENEMY_CHASER, ENEMY_SHOOTER } from "../core/defs/enemies";
 import { initEnemyFromDef } from "../core/sim/systems/initEnemy";
-import { MAP_ARENA } from "../core/defs/maps";
+import { MAP_BUNKER } from "../core/defs/maps";
 
 function emptyIntents(count: number): PlayerIntent[] {
   const intents: PlayerIntent[] = [];
@@ -169,7 +169,7 @@ describe("shooter enemy type", () => {
   });
 
   it("enemy bullet destroys breakable tile", () => {
-    const state = createGameState("coop", 1, 42);
+    const state = createGameState("coop", 1, 42, MAP_BUNKER);
     const rng = createRng(42);
     const events = createEventBus();
     const intents = emptyIntents(1);
@@ -188,8 +188,8 @@ describe("shooter enemy type", () => {
     }
     expect(breakableIdx).not.toBe(-1);
 
-    const cols = MAP_ARENA.cols;
-    const cs = MAP_ARENA.cellSize;
+    const cols = MAP_BUNKER.cols;
+    const cs = MAP_BUNKER.cellSize;
     const col = breakableIdx % cols;
     const row = (breakableIdx / cols) | 0;
     const tileX = col * cs + cs / 2;

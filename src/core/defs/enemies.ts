@@ -56,7 +56,7 @@ export const ENEMY_SPINNER: EnemyDef = {
   knockback: 16,
   score: 200,
   ranged: {
-    fireRate: 12,            // ticks — steady rotating stream
+    fireRate: 11,            // ticks — odd to avoid locking to cardinal directions
     bulletSpeed: 250,        // px/s — slower bullets for readability
     bulletDamage: 1,
     bulletTTL: 37,           // ticks (~0.6s) — short range ring
