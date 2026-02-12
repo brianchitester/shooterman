@@ -64,6 +64,9 @@ export interface EnemyState {
   colliderRadius: number; // px (from def)
   moveSpeed: number; // px/s (from def)
   spinAngle: number; // radians, used by spinning behaviors
+  trailCooldown: number; // ticks until next trail tile can be placed
+  trailLastCol: number;  // last grid col (-1 = none yet)
+  trailLastRow: number;  // last grid row (-1 = none yet)
 }
 
 export type TileType = "empty" | "solid" | "breakable";

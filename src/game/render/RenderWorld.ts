@@ -105,6 +105,7 @@ export class RenderWorld {
       switch (evt.type) {
         case "tile_damaged":
         case "tile_destroyed":
+        case "tile_created":
           this.tilesDirty = true;
           break;
       }
@@ -124,6 +125,11 @@ export class RenderWorld {
         case "tile_destroyed": {
           const cs = state.tiles.cellSize;
           this.spawnFlash(evt.col * cs + cs / 2, evt.row * cs + cs / 2, 6, 8, 0xffcc00);
+          break;
+        }
+        case "tile_created": {
+          const cs = state.tiles.cellSize;
+          this.spawnFlash(evt.col * cs + cs / 2, evt.row * cs + cs / 2, 6, 8, 0x2d8659);
           break;
         }
         case "hit_player": {

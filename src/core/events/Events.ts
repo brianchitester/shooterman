@@ -80,6 +80,13 @@ export interface EnemyKilledEvent {
   killerBulletOwnerId: EntityId;
 }
 
+export interface TileCreatedEvent {
+  type: "tile_created";
+  col: number;
+  row: number;
+  hp: number;
+}
+
 export interface PlayerJoinedEvent {
   type: "player_joined";
   playerId: EntityId;
@@ -101,4 +108,5 @@ export type GameEvent =
   | PlayerRespawnedEvent
   | EnemySpawnedEvent
   | EnemyKilledEvent
+  | TileCreatedEvent
   | PlayerJoinedEvent;

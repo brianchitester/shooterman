@@ -19,6 +19,14 @@ export interface EnemyDef {
     weaponId: string;      // used as bullet.weaponId for VFX lookup
   };
 
+  // Trail (optional). If present, enemy leaves breakable tiles behind it.
+  trail?: {
+    tileHp: number;           // HP of placed breakable tiles
+    cooldownTicks: number;    // min ticks between placements
+    maxTrailTiles: number;    // FIFO cap while alive (oldest auto-decay)
+    playerSafeRadius: number; // px — don't place tiles near players
+  };
+
   // Rendering hints (core-safe, no Phaser types)
   visual: {
     shape: "circle" | "triangle" | "diamond" | "square";

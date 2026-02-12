@@ -8,6 +8,7 @@ import { shootingSystem } from "./systems/shooting";
 import { bulletSystem } from "./systems/bullets";
 import { collisionSystem } from "./systems/collisions";
 import { enemyAISystem } from "./systems/enemies";
+import { trailSystem } from "./systems/trail";
 import { spawnSystem } from "./systems/spawns";
 import { livesRespawnSystem } from "./systems/livesRespawn";
 import { modeRulesSystem } from "./systems/modeRules";
@@ -26,6 +27,7 @@ export function step(
   bulletSystem(state, DT);
   collisionSystem(state, events);
   enemyAISystem(state, DT, events);
+  trailSystem(state, events);
   spawnSystem(state, DT, rng, events);
   livesRespawnSystem(state, intents, DT, events);
   modeRulesSystem(state, DT);

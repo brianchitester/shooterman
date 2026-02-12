@@ -26,4 +26,7 @@ export function initEnemyFromDef(
   enemy.colliderRadius = def.colliderRadius;
   enemy.moveSpeed = def.moveSpeed;
   enemy.spinAngle = 0;
+  enemy.trailCooldown = 0;
+  enemy.trailLastCol = -1;
+  enemy.trailLastRow = -1;
 }

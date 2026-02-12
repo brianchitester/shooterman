@@ -66,6 +66,9 @@ function createEnemySlot(): EnemyState {
     colliderRadius: 0,
     moveSpeed: 0,
     spinAngle: 0,
+    trailCooldown: 0,
+    trailLastCol: -1,
+    trailLastRow: -1,
   };
 }
 

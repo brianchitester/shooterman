@@ -73,10 +73,36 @@ export const ENEMY_SPINNER: EnemyDef = {
   spawnAfterTick: 1800,     // appears after 30s
 };
 
+export const ENEMY_TERRAFORMER: EnemyDef = {
+  id: "terraformer",
+  name: "Terraformer",
+  hp: 4,
+  moveSpeed: 70,             // px/s — slow, deliberate
+  contactDamage: 1,
+  colliderRadius: 10,
+  knockback: 8,              // low (heavy)
+  score: 300,
+  trail: {
+    tileHp: 1,               // fragile — 1 bullet to destroy
+    cooldownTicks: 6,         // ~10 tiles/sec max
+    maxTrailTiles: 15,        // FIFO cap; oldest auto-decays
+    playerSafeRadius: 24,     // ~2 cells, won't trap players
+  },
+  visual: {
+    shape: "square",
+    color: 0x2d8659,          // green — "builder" feel
+    rotateToVelocity: false,
+  },
+  behaviorId: "chase",
+  spawnWeight: 2,
+  spawnAfterTick: 2400,       // appears after 40s
+};
+
 export const ENEMY_LIST: ReadonlyArray<EnemyDef> = [
   ENEMY_CHASER,
   ENEMY_SHOOTER,
   ENEMY_SPINNER,
+  ENEMY_TERRAFORMER,
 ];
 
 export const ENEMY_REGISTRY: Record<string, EnemyDef> = {};
