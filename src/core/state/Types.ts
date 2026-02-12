@@ -1,6 +1,6 @@
 export type EntityId = number;
 
-export type DeviceType = "kbm" | "gamepad";
+export type DeviceType = "kbm" | "gamepad" | "cpu";
 
 export interface DeviceAssignment {
   type: DeviceType;

@@ -6,6 +6,7 @@ interface PvpPlayerResult {
   slot: number;
   kills: number;
   deaths: number;
+  isCpu?: boolean;
 }
 
 interface GameOverData {
@@ -96,7 +97,8 @@ export class GameOverScene extends Phaser.Scene {
       const colorHex = `#${colorNum.toString(16).padStart(6, "0")}`;
       const isWinner = i === 0;
 
-      const line = `P${p.slot + 1}  ${p.kills} kills  ${p.deaths} deaths`;
+      const label = p.isCpu ? "CPU" : `P${p.slot + 1}`;
+      const line = `${label}  ${p.kills} kills  ${p.deaths} deaths`;
       this.add
         .text(cx, startY + i * 28, line, {
           fontSize: isWinner ? "20px" : "16px",

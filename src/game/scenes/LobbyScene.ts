@@ -172,6 +172,14 @@ export class LobbyScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    this.add
+      .text(cx, 685, "C = add CPU  |  X = remove CPU", {
+        fontSize: "14px",
+        color: "#555555",
+        fontFamily: "monospace",
+      })
+      .setOrigin(0.5);
+
     // --- Input Handlers ---
 
     // KB/M join (Space)
@@ -208,6 +216,16 @@ export class LobbyScene extends Phaser.Scene {
       if (this.isP1Device("kbm", -1)) this.cycleWeapon(1);
     });
 
+    // Add CPU (P1 only): C
+    this.input.keyboard!.on("keydown-C", () => {
+      if (this.isP1Joined()) this.addCpuPlayer();
+    });
+
+    // Remove CPU (P1 only): X
+    this.input.keyboard!.on("keydown-X", () => {
+      if (this.isP1Joined()) this.removeCpuPlayer();
+    });
+
     // Start match (P1 only): Enter
     this.input.keyboard!.on("keydown-ENTER", () => {
       if (this.isP1Device("kbm", -1)) this.tryStart();
@@ -225,6 +243,14 @@ export class LobbyScene extends Phaser.Scene {
         // B button (index 1) = leave
         else if (button.index === 1) {
           this.leaveDevice("gamepad", gi);
+        }
+        // X button (index 2) = remove CPU (P1 only)
+        else if (button.index === 2) {
+          if (this.isP1Device("gamepad", gi)) this.removeCpuPlayer();
+        }
+        // Y button (index 3) = add CPU (P1 only)
+        else if (button.index === 3) {
+          if (this.isP1Device("gamepad", gi)) this.addCpuPlayer();
         }
         // D-pad left (index 14) or D-pad right (index 15) = mode toggle (P1 only)
         else if (button.index === 14 || button.index === 15) {
@@ -315,10 +341,40 @@ export class LobbyScene extends Phaser.Scene {
   }
 
   private refreshSlot(index: number): void {
-    const occupied = this.slots[index] !== null;
+    const slot = this.slots[index];
+    const occupied = slot !== null;
     this.slotCircles[index].setVisible(occupied);
     this.slotLabels[index].setVisible(occupied);
     this.slotPrompts[index].setVisible(!occupied);
+    if (occupied) {
+      this.slotLabels[index].setText(slot!.type === "cpu" ? "CPU" : `P${index + 1}`);
+    }
+  }
+
+  private isP1Joined(): boolean {
+    return this.slots[0] !== null;
+  }
+
+  private addCpuPlayer(): void {
+    const slot = this.findNextEmptySlot();
+    if (slot === -1) return;
+    this.slots[slot] = { type: "cpu", gamepadIndex: -1 };
+    this.refreshSlot(slot);
+    this.updateStartPrompt();
+  }
+
+  private removeCpuPlayer(): void {
+    // Find last CPU slot (scan backwards)
+    for (let i = this.slots.length - 1; i >= 0; i--) {
+      const s = this.slots[i];
+      if (s && s.type === "cpu") {
+        this.slots[i] = null;
+        this.refreshSlot(i);
+        this.compactSlots();
+        this.updateStartPrompt();
+        return;
+      }
+    }
   }
 
   private toggleMode(): void {
@@ -343,6 +399,10 @@ export class LobbyScene extends Phaser.Scene {
   private tryStart(): void {
     const count = this.getPlayerCount();
     if (count < 1) return;
+
+    // Require at least 1 human player
+    const hasHuman = this.slots.some(s => s !== null && s.type !== "cpu");
+    if (!hasHuman) return;
 
     // Build compact assignments array (no gaps)
     const assignments: DeviceAssignment[] = [];

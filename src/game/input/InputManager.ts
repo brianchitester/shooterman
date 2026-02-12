@@ -1,6 +1,7 @@
-import type { PlayerIntent, PlayerState, DeviceAssignment } from "../../core/state/Types";
+import type { PlayerIntent, GameState, DeviceAssignment } from "../../core/state/Types";
 import { KeyboardMouseDevice } from "./KeyboardMouseDevice";
 import { GamepadDevice } from "./GamepadDevice";
+import { botPoll } from "./BotIntent";
 
 const EMPTY_INTENT: PlayerIntent = {
   move: { x: 0, y: 0 },
@@ -29,14 +30,16 @@ export class InputManager {
     return this.assignments;
   }
 
-  poll(players: PlayerState[]): PlayerIntent[] {
+  poll(state: GameState): PlayerIntent[] {
     const intents: PlayerIntent[] = [];
-    for (let i = 0; i < players.length; i++) {
+    for (let i = 0; i < state.players.length; i++) {
       const assignment = this.assignments[i];
       if (!assignment) {
         intents[i] = EMPTY_INTENT;
       } else if (assignment.type === "kbm") {
-        intents[i] = this.kbm.poll(players[i].pos);
+        intents[i] = this.kbm.poll(state.players[i].pos);
+      } else if (assignment.type === "cpu") {
+        intents[i] = botPoll(state, i);
       } else {
         intents[i] = this.gamepad.pollByIndex(assignment.gamepadIndex) ?? EMPTY_INTENT;
       }

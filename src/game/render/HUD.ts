@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import type { GameState } from "../../core/state/Types";
+import type { GameState, DeviceAssignment } from "../../core/state/Types";
 import { ARENA_WIDTH, REVIVE_RADIUS, TICKS_PER_SECOND, PVP_MATCH_DURATION, MAX_PLAYERS } from "../../core/state/Defaults";
 import { PLAYER_COLORS } from "./RenderFactories";
 
@@ -16,6 +16,7 @@ export class HUD {
   private revivePrompt!: Phaser.GameObjects.Text;
   private timerText!: Phaser.GameObjects.Text;
   private pvpScoreTexts: Phaser.GameObjects.Text[] = [];
+  private assignments: DeviceAssignment[] = [];
 
   create(scene: Phaser.Scene): void {
     this.livesText = scene.add.text(8, 4, "", TEXT_STYLE).setDepth(HUD_DEPTH).setScrollFactor(0);
@@ -59,6 +60,10 @@ export class HUD {
     }
   }
 
+  setAssignments(assignments: DeviceAssignment[]): void {
+    this.assignments = assignments;
+  }
+
   update(state: GameState): void {
     if (state.match.mode === "coop") {
       this.livesText.setText(`LIVES: ${state.match.sharedLives}`);
@@ -89,7 +94,9 @@ export class HUD {
       for (let i = 0; i < this.pvpScoreTexts.length; i++) {
         if (i < sorted.length) {
           const entry = sorted[i];
-          this.pvpScoreTexts[i].setText(`P${entry.slot + 1}: ${entry.kills}`);
+          const isCpu = this.assignments[entry.slot]?.type === "cpu";
+          const label = isCpu ? "CPU" : `P${entry.slot + 1}`;
+          this.pvpScoreTexts[i].setText(`${label}: ${entry.kills}`);
           const colorNum = PLAYER_COLORS[entry.slot % PLAYER_COLORS.length];
           this.pvpScoreTexts[i].setColor(`#${colorNum.toString(16).padStart(6, "0")}`);
           this.pvpScoreTexts[i].setVisible(true);

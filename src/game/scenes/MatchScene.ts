@@ -12,6 +12,7 @@ import { RenderWorld } from "../render/RenderWorld";
 import { HUD } from "../render/HUD";
 import { DevHotkeys } from "../debug/DevHotkeys";
 import { InputManager } from "../input/InputManager";
+import { resetBotMemory } from "../input/BotIntent";
 import { createPrevPositions, snapshotPositions } from "../render/PrevPositions";
 import type { PrevPositions } from "../render/PrevPositions";
 
@@ -60,6 +61,7 @@ export class MatchScene extends Phaser.Scene {
     this.inputMgr = new InputManager(this);
     this.inputMgr.setAssignments(assignments);
     this.assignments = [...assignments];
+    resetBotMemory(playerCount);
     this.renderWorld = new RenderWorld();
     this.hud = new HUD();
     this.prev = createPrevPositions();
@@ -78,6 +80,7 @@ export class MatchScene extends Phaser.Scene {
 
     this.renderWorld.create(this, this.state);
     this.hud.create(this);
+    this.hud.setAssignments(this.assignments);
 
     if (import.meta.env.DEV) {
       this.devHotkeys = new DevHotkeys(this);
@@ -111,7 +114,7 @@ export class MatchScene extends Phaser.Scene {
     this.checkMidMatchJoin();
 
     // Poll input
-    const intents = this.inputMgr.poll(this.state.players);
+    const intents = this.inputMgr.poll(this.state);
 
     // Accumulate time (Phaser gives delta in ms)
     this.accumulator += delta / 1000;
@@ -148,10 +151,11 @@ export class MatchScene extends Phaser.Scene {
       this.scene.launch("GameOverScene", {
         mode: this.state.match.mode,
         score: this.state.match.score,
-        players: this.state.players.map(p => ({
+        players: this.state.players.map((p, i) => ({
           slot: p.slot,
           kills: p.kills,
           deaths: p.deaths,
+          isCpu: this.assignments[i]?.type === "cpu",
         })),
       });
     }
