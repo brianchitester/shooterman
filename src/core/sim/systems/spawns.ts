@@ -29,6 +29,13 @@ let edgeOrderCount = 0;
 export function spawnSystem(state: GameState, dt: number, rng: SeededRng, events: EventBus): void {
   if (state.match.mode !== "coop") return;
 
+  // Don't spawn if all players are downed or dead
+  let anyUp = false;
+  for (let i = 0; i < state.players.length; i++) {
+    if (state.players[i].alive && !state.players[i].downed) { anyUp = true; break; }
+  }
+  if (!anyUp) return;
+
   const playerCount = state.players.length;
 
   // Calculate spawn interval (ramps from 3s to 1s over 60s)
