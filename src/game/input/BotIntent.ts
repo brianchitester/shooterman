@@ -1,4 +1,5 @@
-import type { GameState, PlayerIntent, Vec2 } from "../../core/state/Types";
+import type { GameState, PlayerIntent, Vec2, TileGrid } from "../../core/state/Types";
+import { hasLineOfSight, findPath } from "../../core/sim/tileCollision";
 
 // --- Per-bot persistent state ---
 
@@ -12,6 +13,12 @@ interface BotMemory {
   lastY: number;
   stuckTicks: number;
   slideDir: number; // 1 or -1 — which perpendicular to try
+  // Pathfinding cache
+  path: Vec2[];
+  pathIdx: number;
+  pathTargetX: number;
+  pathTargetY: number;
+  pathAge: number;
 }
 
 /** Per-frame tuning derived from boldness. */
@@ -36,6 +43,7 @@ function newMemory(): BotMemory {
     aimJitterAngle: 0, jitterTimer: 0, shootDelay: 0,
     boldness: Math.random(),
     lastX: 0, lastY: 0, stuckTicks: 0, slideDir: Math.random() < 0.5 ? 1 : -1,
+    path: [], pathIdx: 0, pathTargetX: 0, pathTargetY: 0, pathAge: 0,
   };
 }
 
@@ -91,6 +99,11 @@ const DODGE_SCAN_RADIUS_SQ = 180 * 180;
 // Weight blending (fixed)
 const W_REPULSE = 0.8;
 const W_BASE = 1.0;
+
+// Pathfinding
+const REPATH_INTERVAL = 30;       // ticks between re-pathing (~0.5s)
+const REPATH_DIST_SQ = 48 * 48;  // re-path if target moved > 1 tile
+const WAYPOINT_REACH_SQ = 20 * 20; // waypoint considered reached within 20px
 
 const EMPTY_INTENT: PlayerIntent = {
   move: { x: 0, y: 0 },
@@ -203,9 +216,9 @@ export function botPoll(state: GameState, playerIndex: number): PlayerIntent {
 function coopBehavior(state: GameState, playerIndex: number, mem: BotMemory, tune: BotTuning): PlayerIntent {
   const player = state.players[playerIndex];
 
-  // Priority 1: revive downed ally within range
-  const downedAlly = findNearestDownedAlly(state, playerIndex);
-  if (downedAlly) {
+  // Priority 1: revive downed ally (danger-gated)
+  const downedAlly = findBestDownedAlly(state, playerIndex);
+  if (downedAlly && !isInDanger(state, player.pos, mem.boldness)) {
     const dx = downedAlly.x - player.pos.x;
     const dy = downedAlly.y - player.pos.y;
     const distSq = dx * dx + dy * dy;
@@ -213,16 +226,17 @@ function coopBehavior(state: GameState, playerIndex: number, mem: BotMemory, tun
       const dir = dirTo(player.pos, downedAlly);
       return { move: { x: dir.x * tune.moveScale, y: dir.y * tune.moveScale }, aim: dir, shoot: false, revive: true };
     }
-    // Move toward downed ally
-    const dir = dirTo(player.pos, downedAlly);
-    const wobbled = addWobble(dir);
-    return { move: { x: wobbled.x * tune.moveScale, y: wobbled.y * tune.moveScale }, aim: dir, shoot: false, revive: false };
+    // Move toward downed ally via pathfinding
+    const moveDir = getPathDirection(player.pos, downedAlly.x, downedAlly.y, state.tiles, mem);
+    const aimDir = dirTo(player.pos, downedAlly);
+    const wobbled = addWobble(moveDir);
+    return { move: { x: wobbled.x * tune.moveScale, y: wobbled.y * tune.moveScale }, aim: aimDir, shoot: false, revive: false };
   }
 
   // Priority 2: chase and shoot nearest enemy
   const enemy = findNearestEnemy(state, player.pos);
   if (enemy) {
-    return chaseAndShoot(player.pos, enemy, mem, tune);
+    return chaseAndShoot(player.pos, enemy, mem, tune, state.tiles);
   }
 
   // Fallback: wander
@@ -237,7 +251,7 @@ function pvpBehavior(state: GameState, playerIndex: number, mem: BotMemory, tune
   // Chase nearest alive enemy player
   const target = findNearestAlivePlayerExcept(state, playerIndex);
   if (target) {
-    return chaseAndShoot(player.pos, target, mem, tune);
+    return chaseAndShoot(player.pos, target, mem, tune, state.tiles);
   }
 
   return wander(mem, tune);
@@ -245,15 +259,18 @@ function pvpBehavior(state: GameState, playerIndex: number, mem: BotMemory, tune
 
 // --- Shared chase + shoot logic ---
 
-function chaseAndShoot(selfPos: Vec2, targetPos: Vec2, mem: BotMemory, tune: BotTuning): PlayerIntent {
+function chaseAndShoot(selfPos: Vec2, targetPos: Vec2, mem: BotMemory, tune: BotTuning, tiles: TileGrid): PlayerIntent {
   const dir = dirTo(selfPos, targetPos);
   const jitteredAim = addAimJitter(dir, mem.aimJitterAngle);
 
   // Check alignment
   const dot = dir.x * jitteredAim.x + dir.y * jitteredAim.y;
 
+  // Gate shooting on line-of-sight (don't waste ammo through walls)
+  const los = hasLineOfSight(selfPos.x, selfPos.y, targetPos.x, targetPos.y, tiles);
+
   let shoot = false;
-  if (dot >= tune.aimThreshold) {
+  if (los && dot >= tune.aimThreshold) {
     if (mem.shootDelay <= 0) {
       shoot = true;
     } else {
@@ -263,7 +280,7 @@ function chaseAndShoot(selfPos: Vec2, targetPos: Vec2, mem: BotMemory, tune: Bot
     mem.shootDelay = tune.reactionTicks;
   }
 
-  // Standoff: strafe when close, approach when far
+  // Standoff: strafe when close, pathfind when far
   const dx = targetPos.x - selfPos.x;
   const dy = targetPos.y - selfPos.y;
   const distSq = dx * dx + dy * dy;
@@ -271,7 +288,8 @@ function chaseAndShoot(selfPos: Vec2, targetPos: Vec2, mem: BotMemory, tune: Bot
   if (distSq < tune.standoffSq) {
     move = { x: -dir.y * tune.moveScale, y: dir.x * tune.moveScale };
   } else {
-    move = addWobble(dir);
+    const moveDir = getPathDirection(selfPos, targetPos.x, targetPos.y, tiles, mem);
+    move = addWobble(moveDir);
     move.x *= tune.moveScale;
     move.y *= tune.moveScale;
   }
@@ -383,6 +401,101 @@ function getAllyRepulsion(state: GameState, selfIndex: number): Vec2 {
   return { x: rx, y: ry };
 }
 
+// --- Pathfinding direction ---
+
+/** Returns a movement direction using cached A* path. Falls back to direct if LOS is clear or no path. */
+function getPathDirection(selfPos: Vec2, targetX: number, targetY: number, tiles: TileGrid, mem: BotMemory): Vec2 {
+  // Direct LOS? Skip pathfinding entirely
+  if (hasLineOfSight(selfPos.x, selfPos.y, targetX, targetY, tiles)) {
+    mem.path.length = 0;
+    mem.pathIdx = 0;
+    return dirTo(selfPos, { x: targetX, y: targetY });
+  }
+
+  // Check if we need a new path
+  const tgtDx = targetX - mem.pathTargetX;
+  const tgtDy = targetY - mem.pathTargetY;
+  const targetMoved = tgtDx * tgtDx + tgtDy * tgtDy > REPATH_DIST_SQ;
+
+  mem.pathAge++;
+  if (mem.path.length === 0 || mem.pathIdx >= mem.path.length || targetMoved || mem.pathAge > REPATH_INTERVAL) {
+    const newPath = findPath(selfPos.x, selfPos.y, targetX, targetY, tiles);
+    if (newPath && newPath.length > 0) {
+      mem.path = newPath;
+      mem.pathIdx = 0;
+    } else {
+      mem.path.length = 0;
+      mem.pathIdx = 0;
+    }
+    mem.pathTargetX = targetX;
+    mem.pathTargetY = targetY;
+    mem.pathAge = 0;
+  }
+
+  // Follow path waypoints
+  if (mem.pathIdx < mem.path.length) {
+    const wp = mem.path[mem.pathIdx];
+    const dx = wp.x - selfPos.x;
+    const dy = wp.y - selfPos.y;
+    const distSq = dx * dx + dy * dy;
+
+    if (distSq < WAYPOINT_REACH_SQ) {
+      mem.pathIdx++;
+      if (mem.pathIdx < mem.path.length) {
+        return dirTo(selfPos, mem.path[mem.pathIdx]);
+      }
+    } else {
+      const len = Math.sqrt(distSq);
+      return { x: dx / len, y: dy / len };
+    }
+  }
+
+  // Fallback: direct movement
+  return dirTo(selfPos, { x: targetX, y: targetY });
+}
+
+// --- Danger check for revive safety ---
+
+/** Check for nearby enemies or incoming enemy bullets heading toward bot. */
+function isInDanger(state: GameState, selfPos: Vec2, boldness: number): boolean {
+  // Danger radius modulated by boldness: bold bots (0.7+) → ~70px, cautious → ~120px
+  const dangerRadius = lerp(120, 70, boldness);
+  const dangerRadiusSq = dangerRadius * dangerRadius;
+
+  // Check enemy proximity
+  for (let i = 0; i < state.enemies.length; i++) {
+    const e = state.enemies[i];
+    if (!e.active || e.spawnTimer > 0) continue;
+    const dx = selfPos.x - e.pos.x;
+    const dy = selfPos.y - e.pos.y;
+    if (dx * dx + dy * dy < dangerRadiusSq) return true;
+  }
+
+  // Check incoming enemy bullets (reuse bullet-heading logic from getBulletDodge)
+  const bulletScanSq = dangerRadiusSq;
+  for (let i = 0; i < state.bullets.length; i++) {
+    const b = state.bullets[i];
+    if (!b.active || !b.fromEnemy) continue;
+    const toSelfX = selfPos.x - b.pos.x;
+    const toSelfY = selfPos.y - b.pos.y;
+    const distSq = toSelfX * toSelfX + toSelfY * toSelfY;
+    if (distSq > bulletScanSq) continue;
+
+    const bSpeed = Math.sqrt(b.vel.x * b.vel.x + b.vel.y * b.vel.y);
+    if (bSpeed < 0.001) continue;
+    const bDirX = b.vel.x / bSpeed;
+    const bDirY = b.vel.y / bSpeed;
+    // Is bullet heading toward us?
+    const dot = toSelfX * bDirX + toSelfY * bDirY;
+    if (dot <= 0) continue;
+    // Check lateral distance — within ~40px corridor
+    const cross = toSelfX * bDirY - toSelfY * bDirX;
+    if (Math.abs(cross) < 40) return true;
+  }
+
+  return false;
+}
+
 // --- Helper functions ---
 
 function findNearestEnemy(state: GameState, selfPos: Vec2): Vec2 | null {
@@ -433,13 +546,39 @@ function findNearestAlivePlayerExcept(state: GameState, selfIndex: number): Vec2
   return found ? { x: nearestX, y: nearestY } : null;
 }
 
-function findNearestDownedAlly(state: GameState, selfIndex: number): Vec2 | null {
-  let nearestDistSq = Infinity;
-  let nearestX = 0;
-  let nearestY = 0;
-  let found = false;
+/**
+ * Find best downed ally to revive using reviverId as a soft reservation.
+ * Pass 1: nearest ally where reviverId is null or matches self (unclaimed).
+ * Pass 2 (fallback): any downed ally (backup reviver).
+ */
+function findBestDownedAlly(state: GameState, selfIndex: number): Vec2 | null {
   const self = state.players[selfIndex];
+  const selfId = self.id;
+  let bestDistSq = Infinity;
+  let bestX = 0;
+  let bestY = 0;
+  let found = false;
 
+  // Pass 1: unclaimed or self-claimed targets
+  for (let i = 0; i < state.players.length; i++) {
+    if (i === selfIndex) continue;
+    const p = state.players[i];
+    if (!p.downed) continue;
+    if (p.reviverId !== null && p.reviverId !== selfId) continue;
+    const dx = p.pos.x - self.pos.x;
+    const dy = p.pos.y - self.pos.y;
+    const d = dx * dx + dy * dy;
+    if (d < bestDistSq) {
+      bestDistSq = d;
+      bestX = p.pos.x;
+      bestY = p.pos.y;
+      found = true;
+    }
+  }
+
+  if (found) return { x: bestX, y: bestY };
+
+  // Pass 2: fallback — any downed ally (backup reviver)
   for (let i = 0; i < state.players.length; i++) {
     if (i === selfIndex) continue;
     const p = state.players[i];
@@ -447,15 +586,15 @@ function findNearestDownedAlly(state: GameState, selfIndex: number): Vec2 | null
     const dx = p.pos.x - self.pos.x;
     const dy = p.pos.y - self.pos.y;
     const d = dx * dx + dy * dy;
-    if (d < nearestDistSq) {
-      nearestDistSq = d;
-      nearestX = p.pos.x;
-      nearestY = p.pos.y;
+    if (d < bestDistSq) {
+      bestDistSq = d;
+      bestX = p.pos.x;
+      bestY = p.pos.y;
       found = true;
     }
   }
 
-  return found ? { x: nearestX, y: nearestY } : null;
+  return found ? { x: bestX, y: bestY } : null;
 }
 
 function dirTo(from: Vec2, to: Vec2): Vec2 {

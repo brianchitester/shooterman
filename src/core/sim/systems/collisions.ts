@@ -1,11 +1,22 @@
 import type { GameState } from "../../state/Types";
 import type { EventBus } from "../../events/EventBus";
 import { HIT_IFRAMES, DOWNED_BLEEDOUT_TIMER, PVP_RESPAWN_DELAY, PLAYER_KNOCKBACK, PLAYER_RADIUS, BULLET_RADIUS } from "../../state/Defaults";
+import { resolveCircleTile } from "../tileCollision";
 
 function distSq(ax: number, ay: number, bx: number, by: number): number {
   const dx = ax - bx;
   const dy = ay - by;
   return dx * dx + dy * dy;
+}
+
+function clampToBounds(pos: { x: number; y: number }, radius: number, state: GameState): void {
+  const cs = state.tiles.cellSize;
+  const maxX = state.tiles.width * cs - cs;
+  const maxY = state.tiles.height * cs - cs;
+  if (pos.x < cs) pos.x = cs;
+  if (pos.x > maxX) pos.x = maxX;
+  if (pos.y < cs) pos.y = cs;
+  if (pos.y > maxY) pos.y = maxY;
 }
 
 export function collisionSystem(state: GameState, events: EventBus): void {
@@ -34,6 +45,8 @@ export function collisionSystem(state: GameState, events: EventBus): void {
           if (bvLen > 0 && enemy.knockback > 0) {
             enemy.pos.x += (bullet.vel.x / bvLen) * enemy.knockback;
             enemy.pos.y += (bullet.vel.y / bvLen) * enemy.knockback;
+            resolveCircleTile(enemy.pos.x, enemy.pos.y, enemy.colliderRadius, state.tiles, enemy.pos);
+            clampToBounds(enemy.pos, enemy.colliderRadius, state);
           }
 
           events.emit({
@@ -108,6 +121,8 @@ export function collisionSystem(state: GameState, events: EventBus): void {
         if (bvLen > 0) {
           player.pos.x += (bullet.vel.x / bvLen) * PLAYER_KNOCKBACK;
           player.pos.y += (bullet.vel.y / bvLen) * PLAYER_KNOCKBACK;
+          resolveCircleTile(player.pos.x, player.pos.y, PLAYER_RADIUS, state.tiles, player.pos);
+          clampToBounds(player.pos, PLAYER_RADIUS, state);
         }
 
         events.emit({

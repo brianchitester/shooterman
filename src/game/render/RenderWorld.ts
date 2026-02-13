@@ -13,7 +13,7 @@ import {
   createTileGraphics,
   drawTiles,
 } from "./RenderFactories";
-import { REVIVE_HOLD_TIME } from "../../core/state/Defaults";
+import { REVIVE_HOLD_TIME, DOWNED_BLEEDOUT_TIMER } from "../../core/state/Defaults";
 import type { MapColorScheme } from "../../core/defs/MapDef";
 import { getMapDef } from "../../core/defs/maps";
 import { getEnemyDef, ENEMY_CHASER } from "../../core/defs/enemies";
@@ -41,6 +41,7 @@ export class RenderWorld {
   private tileGfx!: Phaser.GameObjects.Graphics;
   private colors!: MapColorScheme;
   private tilesDirty = true;
+  private statusTexts: Phaser.GameObjects.Text[] = [];
   private flashPool: FlashEffect[] = [];
   private flashGfx!: Phaser.GameObjects.Graphics;
 
@@ -76,6 +77,16 @@ export class RenderWorld {
       ring.setVisible(false);
       ring.setDepth(5);
       this.reviveRingGfx[i] = ring;
+    }
+
+    // Status text pool ("HELP!" / "REVIVING...")
+    for (let i = 0; i < MAX_PLAYERS; i++) {
+      const txt = scene.add.text(0, 0, "", {
+        fontSize: "12px",
+        fontFamily: "monospace",
+        color: "#e74c3c",
+      }).setOrigin(0.5).setDepth(6).setVisible(false);
+      this.statusTexts[i] = txt;
     }
 
     // Bullet pool — single graphic per slot, recolored on fromEnemy change
@@ -158,8 +169,13 @@ export class RenderWorld {
         gfx.setPosition(rx, ry);
         gfx.setVisible(true);
 
-        // Dim downed players
-        gfx.setAlpha(p.downed ? 0.5 : 1);
+        // Downed: pulse alpha ~2Hz using downedTimer as clock
+        if (p.downed) {
+          const pulse = 0.3 + 0.4 * (0.5 + 0.5 * Math.sin(p.downedTimer * 0.21));
+          gfx.setAlpha(pulse);
+        } else {
+          gfx.setAlpha(1);
+        }
 
         // Flash during invuln
         if (p.invulnTimer > 0) {
@@ -176,24 +192,50 @@ export class RenderWorld {
           aim.setVisible(true);
         }
 
-        // Revive progress ring
+        // Dual-ring downed indicator + status text
         const ring = this.reviveRingGfx[i];
-        if (p.downed && p.reviveProgress > 0) {
+        const statusTxt = this.statusTexts[i];
+        if (p.downed) {
           ring.clear();
-          ring.lineStyle(3, 0x2ecc71, 0.9);
-          const progress = p.reviveProgress / REVIVE_HOLD_TIME;
+
+          // Outer ring (red): bleedout timer draining clockwise
+          const bleedFrac = p.downedTimer / DOWNED_BLEEDOUT_TIMER;
+          ring.lineStyle(3, 0xe74c3c, 0.8);
           ring.beginPath();
-          ring.arc(0, 0, 20, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2, false);
+          ring.arc(0, 0, 22, -Math.PI / 2, -Math.PI / 2 + bleedFrac * Math.PI * 2, false);
           ring.strokePath();
+
+          // Inner ring (green): revive progress filling clockwise
+          if (p.reviveProgress > 0) {
+            const reviveFrac = p.reviveProgress / REVIVE_HOLD_TIME;
+            ring.lineStyle(3, 0x2ecc71, 0.9);
+            ring.beginPath();
+            ring.arc(0, 0, 16, -Math.PI / 2, -Math.PI / 2 + reviveFrac * Math.PI * 2, false);
+            ring.strokePath();
+          }
+
           ring.setPosition(rx, ry);
           ring.setVisible(true);
+
+          // Status text
+          if (p.reviveProgress > 0) {
+            statusTxt.setText("REVIVING...");
+            statusTxt.setColor("#2ecc71");
+          } else {
+            statusTxt.setText("HELP!");
+            statusTxt.setColor("#e74c3c");
+          }
+          statusTxt.setPosition(rx, ry - 30);
+          statusTxt.setVisible(true);
         } else {
           ring.setVisible(false);
+          statusTxt.setVisible(false);
         }
       } else {
         gfx.setVisible(false);
         aim.setVisible(false);
         this.reviveRingGfx[i].setVisible(false);
+        this.statusTexts[i].setVisible(false);
       }
     }
 
@@ -202,6 +244,7 @@ export class RenderWorld {
       this.playerGfx[i].setVisible(false);
       this.aimGfx[i].setVisible(false);
       this.reviveRingGfx[i].setVisible(false);
+      this.statusTexts[i].setVisible(false);
     }
 
     // Bullets — single graphic per slot, recolor when fromEnemy changes

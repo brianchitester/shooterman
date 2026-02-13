@@ -25,8 +25,8 @@ export class HUD {
       .setDepth(HUD_DEPTH)
       .setScrollFactor(0);
 
-    this.revivePrompt = scene.add.text(0, 0, "[E] Revive", {
-      fontSize: "12px",
+    this.revivePrompt = scene.add.text(0, 0, "", {
+      fontSize: "14px",
       color: "#2ecc71",
       fontFamily: "monospace",
     })
@@ -106,7 +106,7 @@ export class HUD {
       }
     }
 
-    // Revive prompt: show near first downed teammate in range of any alive player
+    // Revive prompt: show near first downed teammate in range of a human player
     let showPrompt = false;
     if (state.match.mode === "coop") {
       for (let d = 0; d < state.players.length && !showPrompt; d++) {
@@ -116,9 +116,14 @@ export class HUD {
           if (r === d) continue;
           const rescuer = state.players[r];
           if (!rescuer.alive || rescuer.downed) continue;
+          // Skip CPU rescuers — they don't need prompts
+          const assignment = this.assignments[rescuer.slot];
+          if (assignment?.type === "cpu") continue;
           const dx = rescuer.pos.x - downed.pos.x;
           const dy = rescuer.pos.y - downed.pos.y;
           if (dx * dx + dy * dy <= REVIVE_RADIUS * REVIVE_RADIUS) {
+            const key = assignment?.type === "gamepad" ? "[A]" : "[E]";
+            this.revivePrompt.setText(`${key} Revive`);
             this.revivePrompt.setPosition(downed.pos.x, downed.pos.y - 28);
             showPrompt = true;
             break;

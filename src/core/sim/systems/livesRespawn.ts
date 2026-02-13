@@ -3,8 +3,9 @@ import type { EventBus } from "../../events/EventBus";
 import {
   PVP_RESPAWN_DELAY, SPAWN_INVULN_DURATION,
   DOWNED_BLEEDOUT_TIMER, REVIVE_HOLD_TIME, REVIVE_RADIUS,
-  PLAYER_HP,
+  PLAYER_HP, PLAYER_RADIUS,
 } from "../../state/Defaults";
+import { isTileFree } from "../tileCollision";
 
 export function livesRespawnSystem(
   state: GameState,
@@ -36,15 +37,24 @@ function coopLivesSystem(state: GameState, intents: PlayerIntent[], events: Even
       player.downedTimer--;
 
       if (player.downedTimer <= 0) {
-        // Bleed out
+        // Bleed out — save position before clearing state
+        const savedX = player.pos.x;
+        const savedY = player.pos.y;
         player.downed = false;
         player.alive = false;
         events.emit({ type: "player_bled_out", playerId: player.id });
 
-        // Consume a shared life to respawn
+        // Consume a shared life to respawn (prefer in-place)
         if (state.match.sharedLives > 0) {
           state.match.sharedLives--;
-          respawnPlayer(state, player, events);
+          if (isTileFree(savedX, savedY, PLAYER_RADIUS, state.tiles)) {
+            resetPlayer(player);
+            player.pos.x = savedX;
+            player.pos.y = savedY;
+            events.emit({ type: "player_respawned", playerId: player.id, pos: { x: savedX, y: savedY } });
+          } else {
+            respawnPlayer(state, player, events);
+          }
         }
         continue;
       }
@@ -129,6 +139,21 @@ function pvpRespawnSystem(state: GameState, events: EventBus): void {
   }
 }
 
+/** Reset player fields to alive defaults (does not set position). */
+function resetPlayer(player: GameState["players"][0]): void {
+  player.vel.x = 0;
+  player.vel.y = 0;
+  player.hp = PLAYER_HP;
+  player.alive = true;
+  player.downed = false;
+  player.downedTimer = 0;
+  player.reviveProgress = 0;
+  player.reviverId = null;
+  player.respawnTimer = 0;
+  player.invulnTimer = SPAWN_INVULN_DURATION;
+  player.fireCooldown = 0;
+}
+
 function respawnPlayer(state: GameState, player: typeof state.players[0], events: EventBus): void {
   // Choose spawn point with maximum minimum distance from all living threats
   let bestSpawn = 0;
@@ -167,19 +192,9 @@ function respawnPlayer(state: GameState, player: typeof state.players[0], events
   }
 
   const sp = spawnPoints[bestSpawn];
+  resetPlayer(player);
   player.pos.x = sp.x;
   player.pos.y = sp.y;
-  player.vel.x = 0;
-  player.vel.y = 0;
-  player.hp = PLAYER_HP;
-  player.alive = true;
-  player.downed = false;
-  player.downedTimer = 0;
-  player.reviveProgress = 0;
-  player.reviverId = null;
-  player.respawnTimer = 0;
-  player.invulnTimer = SPAWN_INVULN_DURATION;
-  player.fireCooldown = 0;
 
   events.emit({
     type: "player_respawned",

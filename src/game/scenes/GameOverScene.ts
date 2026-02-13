@@ -48,6 +48,8 @@ export class GameOverScene extends Phaser.Scene {
     newGameText.on("pointerout", () => newGameText.setColor("#2ecc71"));
 
     const startNewGame = () => {
+      this.input.keyboard!.removeAllListeners();
+      if (this.input.gamepad) this.input.gamepad.removeAllListeners();
       this.scene.stop("MatchScene");
       this.scene.stop();
       this.scene.start("LobbyScene");
@@ -55,6 +57,13 @@ export class GameOverScene extends Phaser.Scene {
 
     newGameText.on("pointerdown", startNewGame);
     this.input.keyboard!.once("keydown", startNewGame);
+
+    // Gamepad: face buttons (A/B/X/Y = 0-3) or Start (9)
+    if (this.input.gamepad) {
+      this.input.gamepad.on("down", (_pad: Phaser.Input.Gamepad.Gamepad, button: Phaser.Input.Gamepad.Button) => {
+        if (button.index <= 3 || button.index === 9) startNewGame();
+      });
+    }
   }
 
   private createCoopResults(data: GameOverData, cx: number, cy: number): void {
